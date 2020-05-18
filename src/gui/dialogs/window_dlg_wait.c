@@ -111,11 +111,12 @@ void window_dlg_wait_draw(window_dlg_wait_t *window) {
         window->flags &= 0xF00F; //reset animation flags
     }
 
+    // FIXME - clean the code
     if (window->flags & DLG_W8_PROGRESS) { //progress changed
         rect_ui16_t rc_pro = rc;
         rc_pro.x = 10;
         rc_pro.w -= 20;
-        const unsigned int text_len = 16;
+        const unsigned int text_len = 5;
         char text[text_len];
         rc_pro.h = 16;
         rc_pro.y += 120;
