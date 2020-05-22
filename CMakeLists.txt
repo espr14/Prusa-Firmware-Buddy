@@ -463,8 +463,8 @@ target_sources(
           src/common/sound_C_wrapper.cpp
           src/common/sound.cpp
           src/common/support_utils.cpp
-          src/common/errors.c
-          src/common/lang.c
+          src/common/errors.cpp
+          src/common/lang.cpp
           src/common/client_response.cpp
           src/common/crc32.c
           src/common/ini_handler.c
@@ -478,6 +478,7 @@ target_sources(
           src/marlin_stubs/pause/M603.cpp
           src/marlin_stubs/pause/M701_M702.cpp
           src/marlin_stubs/pause/pause.cpp
+          src/marlin_stubs/sdcard/M20-M30_M32-M34.cpp
           src/gui/guimain.c
           src/gui/filament.cpp
   )
