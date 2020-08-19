@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-//C++ checks enum clases
+//C++ checks enum classes
 
 //Client finite state machines
 enum class ClientFSM : uint8_t {
@@ -22,9 +22,9 @@ enum class LoadUnloadMode : uint8_t {
     Purge
 };
 
-//open dialog has paramener
+//open dialog has parameter
 //because I need to set caption of change filament dialog (load / unload / change)
-//use extra state of statemachine to set caption woud be cleaner, but I can miss events
+//use extra state of statemachine to set caption would be cleaner, but I can miss events
 //only last sent event is guaranteed  to pass its data
 using fsm_create_t = void (*)(ClientFSM, uint8_t);                                               //create finite state machine
 using fsm_destroy_t = void (*)(ClientFSM);                                                       //destroy finite state machine
