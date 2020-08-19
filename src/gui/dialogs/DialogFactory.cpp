@@ -39,6 +39,11 @@ static_unique_ptr<IDialogStateful> DialogFactory::G162(uint8_t data) {
     return make_static_unique_ptr<DialogG162>(&all_dialogs, name);
 }
 
+static_unique_ptr<IDialogStateful> DialogFactory::FirstLayer(uint8_t data) {
+    static const char *nm = N_("FIRST LAYER CALIB.");
+    return make_static_unique_ptr<DialogFirstlayer>(&all_dialogs, _(nm));
+}
+
 DialogFactory::Ctors DialogFactory::GetAll() {
     //todo check if all fields are set
     std::array<fnc, size_t(ClientFSM::_count)> ret = { nullptr };
