@@ -65,6 +65,22 @@ enum class PhasesG162 : uint16_t {
     _last = Parking
 };
 
+enum class PhasesFirstLayer : uint16_t {
+    _first = static_cast<uint16_t>(PhasesG162::_last) + 1,
+    UseFilament,
+    SelectFilament,
+    Info1,
+    Info2,
+    Preheating,
+    MBL,
+    Heating,
+    Printing,
+    Repeat, /// exit state
+    CleanSheet,
+    LastValue,
+    _last = LastValue
+};
+
 //static class for work with fsm responses (like button click)
 //encode responses - get them from marlin client, to marlin server and decode them again
 class ClientResponses {

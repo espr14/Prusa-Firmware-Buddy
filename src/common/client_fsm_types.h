@@ -11,7 +11,8 @@ enum class ClientFSM : uint8_t {
     Load_unload,
     G162,
     Printing,
-    _none, //cannot be created, must have same index as _count
+    FirstLayer,
+    _none, //cannot be created, must have the same index as _count
     _count = _none
 };
 
@@ -25,7 +26,7 @@ enum class LoadUnloadMode : uint8_t {
 //open dialog has parameter
 //because I need to set caption of change filament dialog (load / unload / change)
 //use extra state of statemachine to set caption would be cleaner, but I can miss events
-//only last sent event is guaranteed  to pass its data
+//only last sent event is guaranteed to pass its data
 using fsm_create_t = void (*)(ClientFSM, uint8_t);                                               //create finite state machine
 using fsm_destroy_t = void (*)(ClientFSM);                                                       //destroy finite state machine
 using fsm_change_t = void (*)(ClientFSM, uint8_t phase, uint8_t progress_tot, uint8_t progress); //change fsm state or progress
