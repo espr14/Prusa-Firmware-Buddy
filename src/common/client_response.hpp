@@ -67,7 +67,8 @@ enum class PhasesG162 : uint16_t {
 
 enum class PhasesFirstLayer : uint16_t {
     _first = static_cast<uint16_t>(PhasesG162::_last) + 1,
-    UseFilament,
+    UseFilamentLoad,
+    UseFilamentNoLoad,
     SelectFilament,
     Info1,
     Info2,

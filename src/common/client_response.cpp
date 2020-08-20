@@ -29,7 +29,8 @@ const PhaseResponses ClientResponses::G162Responses[CountPhases<PhasesG162>()] =
 
 const PhaseResponses ClientResponses::FirstLayerResponses[CountPhases<PhasesFirstLayer>()] = {
     {}, // _first,
-    {}, // UseFilament,
+    {}, // UseFilamentLoad,
+    {}, // UseFilamentNoLoad,
     {}, // SelectFilament,
     {}, // Info1,
     {}, // Info2,
