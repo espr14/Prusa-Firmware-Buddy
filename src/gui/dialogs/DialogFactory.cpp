@@ -1,4 +1,5 @@
 #include "DialogFactory.hpp"
+#include "DialogFirstLayer.hpp"
 #include "i18n.h"
 
 DialogFactory::mem_space DialogFactory::all_dialogs;
@@ -41,7 +42,7 @@ static_unique_ptr<IDialogStateful> DialogFactory::G162(uint8_t data) {
 
 static_unique_ptr<IDialogStateful> DialogFactory::FirstLayer(uint8_t data) {
     static const char *nm = N_("FIRST LAYER CALIB.");
-    return make_static_unique_ptr<DialogFirstlayer>(&all_dialogs, _(nm));
+    return make_static_unique_ptr<DialogFirstLayer>(&all_dialogs, _(nm));
 }
 
 DialogFactory::Ctors DialogFactory::GetAll() {

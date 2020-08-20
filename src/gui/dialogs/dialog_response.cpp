@@ -21,6 +21,9 @@ const std::array<const char *, static_cast<size_t>(Response::_last) + 1> BtnText
     N_("RETRY"),
     N_("STOP"),
     N_("YES"),
+    N_("NEXT"),
+    N_("LOAD"),
+    N_("UNLOAD"),
 };
 
 /*****************************************************************************/
@@ -31,3 +34,5 @@ const PhaseTexts ph_txt_none          = { BtnTexts::Get(Response::_none),       
 const PhaseTexts ph_txt_yesno         = { BtnTexts::Get(Response::Yes),              BtnTexts::Get(Response::No),    BtnTexts::Get(Response::_none), BtnTexts::Get(Response::_none) };
 // clang-format on
 /*****************************************************************************/
+
+const PhaseTexts btns_next_load_unload = { BtnTexts::Get(Response::Next), BtnTexts::Get(Response::Load), BtnTexts::Get(Response::Unload) }

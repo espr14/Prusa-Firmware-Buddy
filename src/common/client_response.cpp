@@ -26,3 +26,17 @@ const PhaseResponses ClientResponses::G162Responses[CountPhases<PhasesG162>()] =
     {}, //_first
     {}, //Parking
 };
+
+const PhaseResponses ClientResponses::FirstLayerResponses[CountPhases<PhasesFirstLayer>()] = {
+    {}, // UseFilament = _first,
+    {}, // SelectFilament,
+    {}, // Info1,
+    {}, // Info2,
+    {}, // Preheating,
+    {}, // MBL,
+    {}, // Heating,
+    {}, // Printing,
+    {}, // Repeat, /// exit state
+    {}, // CleanSheet,
+    {}, // LastValue,
+};

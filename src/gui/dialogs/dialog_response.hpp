@@ -23,3 +23,4 @@ extern const PhaseTexts ph_txt_stop;
 extern const PhaseTexts ph_txt_continue;
 extern const PhaseTexts ph_txt_none;
 extern const PhaseTexts ph_txt_yesno;
+extern const PhaseTexts btns_next_load_unload

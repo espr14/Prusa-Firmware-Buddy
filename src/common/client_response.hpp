@@ -90,10 +90,12 @@ class ClientResponses {
     //declare 2d arrays of single buttons for radio buttons
     static const PhaseResponses LoadUnloadResponses[CountPhases<PhasesLoadUnload>()];
     static const PhaseResponses G162Responses[CountPhases<PhasesG162>()];
+    static const PhaseResponses FirstLayerResponses[CountPhases<PhasesFirstLayer>()];
 
     //methods to "bind" button array with enum type
     static const PhaseResponses &getResponsesInPhase(PhasesLoadUnload phase) { return LoadUnloadResponses[static_cast<size_t>(phase)]; }
     static const PhaseResponses &getResponsesInPhase(PhasesG162 phase) { return G162Responses[static_cast<size_t>(phase) - static_cast<size_t>(PhasesG162::_first)]; }
+    static const PhaseResponses &getResponsesInPhase(PhasesFirstLayer phase) { return FirstLayerResponses[static_cast<size_t>(phase) - static_cast<size_t>(PhasesFirstLayer::_first)]; }
 
 protected:
     //get index of single response in PhaseResponses

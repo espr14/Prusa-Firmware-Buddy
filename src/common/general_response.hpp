@@ -22,5 +22,8 @@ enum class Response : uint8_t {
     Retry,
     Stop,
     Yes,
-    _last = Yes
+    Next,
+    Load,
+    Unload,
+    _last = Unload
 };
