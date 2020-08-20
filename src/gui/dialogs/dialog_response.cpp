@@ -35,4 +35,4 @@ const PhaseTexts ph_txt_yesno         = { BtnTexts::Get(Response::Yes),         
 // clang-format on
 /*****************************************************************************/
 
-const PhaseTexts btns_next_load_unload = { BtnTexts::Get(Response::Next), BtnTexts::Get(Response::Load), BtnTexts::Get(Response::Unload) }
+const PhaseTexts btns_next_load_unload = { BtnTexts::Get(Response::Next), BtnTexts::Get(Response::Load), BtnTexts::Get(Response::Unload), BtnTexts::Get(Response::_none) };
