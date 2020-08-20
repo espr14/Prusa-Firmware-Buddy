@@ -5,5 +5,5 @@
 
 class DialogFirstLayer : public DialogStateful<PhasesFirstLayer> {
 public:
-    DialogFirstLayer();
+    DialogFirstLayer(string_view_utf8 name);
 };
