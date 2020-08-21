@@ -515,6 +515,7 @@ if(GUI)
             src/gui/dialogs/dialog_response.cpp
             src/gui/dialogs/IDialog.cpp
             src/gui/dialogs/DialogFactory.cpp
+            src/gui/dialogs/DialogFirstLayer.cpp
             src/gui/dialogs/DialogHandler.cpp
             src/gui/dialogs/DialogStateful.cpp
             src/gui/dialogs/DialogRadioButton.cpp
