@@ -51,5 +51,6 @@ DialogFactory::Ctors DialogFactory::GetAll() {
     ret[size_t(ClientFSM::Serial_printing)] = serial_printing;
     ret[size_t(ClientFSM::Load_unload)] = load_unload;
     ret[size_t(ClientFSM::G162)] = G162;
+    ret[size_t(ClientFSM::FirstLayer)] = FirstLayer;
     return ret;
 }

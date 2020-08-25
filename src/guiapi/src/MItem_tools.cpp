@@ -13,6 +13,7 @@
 #include "wui_api.h"
 #include "i18n.h"
 #include "ScreenHandler.hpp"
+#include "DialogFirstLayer.hpp"
 
 /*****************************************************************************/
 //MI_WIZARD
@@ -76,7 +77,7 @@ MI_CALIB_FIRST::MI_CALIB_FIRST()
 }
 
 void MI_CALIB_FIRST::click(IWindowMenu & /*window_menu*/) {
-    wizard_run_firstlay();
+    //wizard_run_firstlay();
 }
 
 /*****************************************************************************/
