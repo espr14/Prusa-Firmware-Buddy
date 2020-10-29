@@ -6,6 +6,7 @@
 using Catch::Matchers::Equals;
 
 #include "window_menu.hpp"
+#include "WinMenuContainer.hpp"
 
 TEST_CASE("Window menu", "[window_menu]") {
     WinMenuContainer<MI_RETURN, MI_TEMPERATURE, MI_CURRENT_PROFILE, MI_MOVE_AXIS, MI_DISABLE_STEP,
