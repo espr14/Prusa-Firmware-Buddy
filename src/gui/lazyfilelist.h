@@ -3,7 +3,6 @@
 #include <iterator>
 #include <algorithm>
 #include <string.h>
-#include <strings.h>
 #include <limits.h>
 #include <array>
 #include "fatfs.h"
