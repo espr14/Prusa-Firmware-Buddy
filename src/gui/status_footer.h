@@ -1,7 +1,7 @@
 // status_footer.h
 #pragma once
 
-#include "gui.hpp"
+//#include "gui.hpp"
 #include "marlin_vars.h"
 
 enum class HeatState : uint8_t {

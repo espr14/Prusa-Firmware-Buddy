@@ -1,8 +1,10 @@
 #pragma once
 
-#include "gui.hpp"
+//#include "gui.hpp"
 #include "window_text.hpp"
 #include "window_frame.hpp"
+#include "window_icon.hpp"
+#include "window_roll_text.hpp"
 
 struct window_header_t : public window_frame_t {
     enum class header_states_t : uint8_t { OFF,

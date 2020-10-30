@@ -2,7 +2,7 @@
 #pragma once
 #include "window_header.hpp"
 #include "status_footer.h"
-#include "gui.hpp"
+//#include "gui.hpp"
 
 struct screen_home_data_t : public AddSuperWindow<window_frame_t> {
     window_header_t header;

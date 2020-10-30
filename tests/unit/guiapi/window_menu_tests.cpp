@@ -7,6 +7,10 @@ using Catch::Matchers::Equals;
 
 #include "window_menu.hpp"
 #include "WinMenuContainer.hpp"
+#include "WindowMenuItems.hpp"
+#include "MItem_menus.hpp"
+#include "MItem_tools.hpp"
+#include "screen_menu_settings.hpp"
 
 TEST_CASE("Window menu", "[window_menu]") {
     WinMenuContainer<MI_RETURN, MI_TEMPERATURE, MI_CURRENT_PROFILE, MI_MOVE_AXIS, MI_DISABLE_STEP,
@@ -18,7 +22,7 @@ TEST_CASE("Window menu", "[window_menu]") {
         MI_EE_LOAD, MI_EE_SAVE, MI_EE_SAVEXML>
         container;
 
-    window_menu_t menu(null, Rect16(0, 0, 240, 320), &container);
+    window_menu_t menu(nullptr, Rect16(0, 0, 240, 320), &container);
 
     //menu.
 }
