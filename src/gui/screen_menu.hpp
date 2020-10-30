@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gui.hpp"
+//#include "gui.hpp"
 #include "window_header.hpp"
 #include "status_footer.h"
 #include "window_menu.hpp"

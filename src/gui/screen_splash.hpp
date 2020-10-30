@@ -1,5 +1,6 @@
 #pragma once
 //#include "gui.hpp"
+#include "window_progress.hpp"
 
 struct screen_splash_data_t : public window_frame_t {
     window_icon_t logo_prusa_mini;
