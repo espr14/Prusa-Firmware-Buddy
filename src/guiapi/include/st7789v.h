@@ -1,7 +1,7 @@
 //st7789v.h
 #pragma once
 
-#include "stm32f4xx_hal.h"
+//#include "stm32f4xx_hal.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdbool.h>

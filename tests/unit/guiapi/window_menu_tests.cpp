@@ -7,7 +7,17 @@ using Catch::Matchers::Equals;
 
 #include "window_menu.hpp"
 #include "i18n.h"
+#include "IWindowMenuItem.hpp"
 #include "WinMenuContainer.hpp"
+
+IWindowMenuItem::IWindowMenuItem(string_view_utf8 label, uint16_t id_icon, bool enabled, bool hidden)
+    : label(label)
+    , hidden(hidden)
+    , enabled(enabled)
+    , focused(false)
+    , selected(false)
+    , id_icon(id_icon) {
+}
 
 //WI_LABEL
 class WI_LABEL_t : public IWindowMenuItem {
@@ -16,17 +26,22 @@ public:
     virtual bool Change(int dif) override;
 };
 
-class MI_RETURN : public WI_LABEL_t {
+WI_LABEL_t::WI_LABEL_t(string_view_utf8 label, uint16_t id_icon, bool enabled, bool hidden)
+    : IWindowMenuItem(label, id_icon, enabled, hidden) {}
+
+class MI_1 : public WI_LABEL_t {
     static constexpr const char *const label = N_("Return");
 
 public:
-    MI_RETURN()
+    MI_1()
         : WI_LABEL_t(_(label), uint16_t(0), true, false) {
     }
+    // virtual bool Change(int dif) override {return }
+    virtual void click(IWindowMenu &window_menu) {}
 };
 
 TEST_CASE("Window menu", "[window_menu]") {
-    WinMenuContainer<MI_RETURN> container;
+    WinMenuContainer<MI_1> container;
 
     window_menu_t menu(nullptr, Rect16(0, 0, 240, 320), &container);
 
