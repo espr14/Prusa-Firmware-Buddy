@@ -15,6 +15,8 @@
     #include "filament_sensor.hpp"
 #endif
 
+#include "../Marlin/src/module/motion.h"
+
 enum class Btn {
     Tune = 0,
     Pause,
@@ -334,6 +336,7 @@ void screen_printing_data_t::update_end_timestamp(time_t now_sec, uint16_t print
     // this MakeRAM is safe - text_etime is allocated in RAM for the lifetime of pw
     w_etime_value.SetText(string_view_utf8::MakeRAM((const uint8_t *)text_etime.data()));
 }
+
 void screen_printing_data_t::update_print_duration(time_t rawtime) {
     w_time_value.color_text = GuiDefaults::COLOR_VALUE_VALID;
     const struct tm *timeinfo = localtime(&rawtime);
@@ -545,4 +548,21 @@ void screen_printing_data_t::change_print_state() {
         set_tune_icon_and_label();
         set_stop_icon_and_label();
     }
+}
+
+void crash_recovery() {
+    display::FillRect(Rect16(10, 10, 100, 100), COLOR_LIME);
+    marlin_print_pause();
+    while (marlin_vars()->print_state != mpsPaused)
+        gui_loop();
+
+    homeaxis(X_AXIS);
+
+    marlin_print_resume();
+
+    /// save XYZ position
+    /// go up (if not too high)
+    /// auto home XY
+    /// measure XY length
+    /// return to saved position
 }
