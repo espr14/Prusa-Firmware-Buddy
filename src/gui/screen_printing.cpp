@@ -16,6 +16,7 @@
 #endif
 
 #include "../Marlin/src/module/motion.h"
+#include "../Marlin/src/module/endstops.h"
 
 enum class Btn {
     Tune = 0,
@@ -551,13 +552,19 @@ void screen_printing_data_t::change_print_state() {
 }
 
 void crash_recovery() {
-    display::FillRect(Rect16(10, 10, 100, 100), COLOR_LIME);
+    display::FillRect(Rect16(0, 0, 10, 10), COLOR_RED);
     marlin_print_pause();
     while (marlin_vars()->print_state != mpsPaused)
         gui_loop();
 
+    display::FillRect(Rect16(0, 0, 10, 10), COLOR_ORANGE);
+
+    endstops.enable(true);
     homeaxis(X_AXIS);
 
+    endstops.not_homing();
+
+    display::FillRect(Rect16(0, 0, 10, 10), COLOR_LIME);
     marlin_print_resume();
 
     /// save XYZ position
