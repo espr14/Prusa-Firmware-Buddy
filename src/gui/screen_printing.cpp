@@ -17,6 +17,8 @@
 
 #include "../Marlin/src/module/motion.h"
 #include "../Marlin/src/module/endstops.h"
+#include "../../Marlin/src/module/planner.h"
+#include "../../Marlin/src/module/stepper.h"
 
 enum class Btn {
     Tune = 0,
@@ -561,15 +563,27 @@ void crash_recovery() {
 
     endstops.enable(true);
     homeaxis(X_AXIS);
+    current_position.pos[X_AXIS] = 0;
+    line_to_current_position(100);
 
+    planner.synchronize();
+    // sg_sampling_enable();
+    const uint32_t m_StartPos_usteps = stepper.position((AxisEnum)X_AXIS);
+    current_position.pos[X_AXIS] = 190;
+    line_to_current_position(100);
+
+    if (planner.movesplanned())
+        gui_loop();
+
+    // sg_sampling_disable();
+    const int32_t endPos_usteps = stepper.position((AxisEnum)X_AXIS);
+    const int32_t length_usteps = endPos_usteps - m_StartPos_usteps;
+    float length_mm = (length_usteps * planner.steps_to_mm[(AxisEnum)X_AXIS]);
+    if (182 <= length_mm && length_mm <= 190) {
+        display::FillRect(Rect16(0, 0, 10, 10), COLOR_LIME);
+    } else {
+        display::FillRect(Rect16(0, 0, 10, 10), COLOR_RED);
+    }
     endstops.not_homing();
-
-    display::FillRect(Rect16(0, 0, 10, 10), COLOR_LIME);
     marlin_print_resume();
-
-    /// save XYZ position
-    /// go up (if not too high)
-    /// auto home XY
-    /// measure XY length
-    /// return to saved position
 }
