@@ -20,7 +20,7 @@ enum class printing_state_t : uint8_t {
     REHEATING_DONE,
     MBL_FAILED,
     PRINTED,
-    CRASH_RECOVERY,
+    // CRASH_RECOVERY,
     COUNT //setting this state == forced update
 };
 

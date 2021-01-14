@@ -177,8 +177,6 @@ extern int marlin_vars_value_to_str(marlin_vars_t *vars, uint8_t var_id, char *s
 // parse variable from string, returns sscanf result (1 = ok)
 extern int marlin_vars_str_to_value(marlin_vars_t *vars, uint8_t var_id, const char *str);
 
-extern void crash_recovery();
-
 #ifdef __cplusplus
 }
 #endif //__cplusplus

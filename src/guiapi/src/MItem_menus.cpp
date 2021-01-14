@@ -6,6 +6,7 @@
 #include "screen_test.hpp"
 #include "screen_messages.hpp"
 #include "marlin_client.h"
+#include "crash_recovery.h"
 
 /*****************************************************************************/
 //MI_VERSION_INFO
