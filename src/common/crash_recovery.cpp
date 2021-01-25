@@ -15,26 +15,10 @@ void home_Marlin(const AxisEnum axis, int dir, bool reset_position) {
 
     endstops.enable(true);
 
-#define _CAN_HOME(A) \
-    (axis == _AXIS(A) && ((A##_MIN_PIN > -1 && A##_HOME_DIR < 0) || (A##_MAX_PIN > -1 && A##_HOME_DIR > 0)))
 #define CAN_HOME_X true
 #define CAN_HOME_Y true
 
-    const int axis_home_dir = (home_dir(axis));
-
-    // Homing Z towards the bed? Deploy the Z probe or endstop.
-
-    // Fast move towards endstop until triggered
-
-    do_homing_move(axis, 1.5f * max_length(axis) * axis_home_dir);
-
-    // When homing Z with probe respect probe clearance
-    const float bump = axis_home_dir * (
-#if HOMING_Z_WITH_PROBE
-                           (axis == Z_AXIS && (Z_HOME_BUMP_MM)) ? _MAX(Z_CLEARANCE_BETWEEN_PROBES, Z_HOME_BUMP_MM) :
-#endif
-                                                                home_bump_mm(axis));
-
+    do_homing_move(axis, 1.5f * max_length(axis) * home_dir(axis));
     set_axis_is_at_home(axis);
     sync_plan_position();
 
