@@ -40,37 +40,6 @@ void home_Marlin(const AxisEnum axis, int dir, bool reset_position) {
 
     destination[axis] = current_position[axis];
 
-// Put away the Z probe
-#if HOMING_Z_WITH_PROBE
-    if (axis == Z_AXIS && STOW_PROBE())
-        return;
-#endif
-
-#ifdef HOMING_BACKOFF_MM
-    constexpr xyz_float_t endstop_backoff = HOMING_BACKOFF_MM;
-    const float backoff_mm = endstop_backoff[
-    #if ENABLED(DELTA)
-        Z_AXIS
-    #else
-        axis
-    #endif
-    ];
-    if (backoff_mm) {
-        current_position[axis] -= ABS(backoff_mm) * axis_home_dir;
-        line_to_current_position(
-    #if HOMING_Z_WITH_PROBE
-            (axis == Z_AXIS) ? MMM_TO_MMS(Z_PROBE_SPEED_FAST) :
-    #endif
-                             homing_feedrate(axis));
-    }
-#endif
-
-// Clear retracted status if homing the Z axis
-#if ENABLED(FWRETRACT)
-    if (axis == Z_AXIS)
-        fwretract.current_hop = 0.0;
-#endif
-
     endstops.not_homing();
     current_position.pos[axis] = 0;
     // line_to_current_position(100);
