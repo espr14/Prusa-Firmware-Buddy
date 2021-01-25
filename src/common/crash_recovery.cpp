@@ -17,63 +17,16 @@ void home_Marlin(const AxisEnum axis, int dir, bool reset_position) {
 
 #define _CAN_HOME(A) \
     (axis == _AXIS(A) && ((A##_MIN_PIN > -1 && A##_HOME_DIR < 0) || (A##_MAX_PIN > -1 && A##_HOME_DIR > 0)))
-#if X_SPI_SENSORLESS
-    #define CAN_HOME_X true
-#else
-    #define CAN_HOME_X _CAN_HOME(X)
-#endif
-#if Y_SPI_SENSORLESS
-    #define CAN_HOME_Y true
-#else
-    #define CAN_HOME_Y _CAN_HOME(Y)
-#endif
-#if Z_SPI_SENSORLESS
-    #define CAN_HOME_Z true
-#else
-    #define CAN_HOME_Z _CAN_HOME(Z)
-#endif
-    if (!CAN_HOME_X && !CAN_HOME_Y && !CAN_HOME_Z)
-        return;
+#define CAN_HOME_X true
+#define CAN_HOME_Y true
 
     const int axis_home_dir = (home_dir(axis));
 
-// Homing Z towards the bed? Deploy the Z probe or endstop.
-#if HOMING_Z_WITH_PROBE
-    if (axis == Z_AXIS && DEPLOY_PROBE())
-        return;
-#endif
-
-// Set flags for X, Y, Z motor locking
-#if HAS_EXTRA_ENDSTOPS
-    switch (axis) {
-    #if ENABLED(X_DUAL_ENDSTOPS)
-    case X_AXIS:
-    #endif
-    #if ENABLED(Y_DUAL_ENDSTOPS)
-    case Y_AXIS:
-    #endif
-    #if Z_MULTI_ENDSTOPS
-    case Z_AXIS:
-    #endif
-        stepper.set_separate_multi_axis(true);
-    default:
-        break;
-    }
-#endif
+    // Homing Z towards the bed? Deploy the Z probe or endstop.
 
     // Fast move towards endstop until triggered
 
-#if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH)
-    if (axis == Z_AXIS && bltouch.deploy())
-        return; // The initial DEPLOY
-#endif
-
     do_homing_move(axis, 1.5f * max_length(axis) * axis_home_dir);
-
-#if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH) && DISABLED(BLTOUCH_HS_MODE)
-    if (axis == Z_AXIS)
-        bltouch.stow(); // Intermediate STOW (in LOW SPEED MODE)
-#endif
 
     // When homing Z with probe respect probe clearance
     const float bump = axis_home_dir * (
@@ -81,30 +34,6 @@ void home_Marlin(const AxisEnum axis, int dir, bool reset_position) {
                            (axis == Z_AXIS && (Z_HOME_BUMP_MM)) ? _MAX(Z_CLEARANCE_BETWEEN_PROBES, Z_HOME_BUMP_MM) :
 #endif
                                                                 home_bump_mm(axis));
-
-    // If a second homing move is configured...
-    if (bump) {
-        // Move away from the endstop by the axis HOME_BUMP_MM
-        do_homing_move(axis, -bump
-#if HOMING_Z_WITH_PROBE
-            ,
-            MMM_TO_MMS(axis == Z_AXIS ? Z_PROBE_SPEED_FAST : 0)
-#endif
-        );
-
-        // Slow move towards endstop until triggered
-
-#if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH) && DISABLED(BLTOUCH_HS_MODE)
-        if (axis == Z_AXIS && bltouch.deploy())
-            return; // Intermediate DEPLOY (in LOW SPEED MODE)
-#endif
-        do_homing_move(axis, 2 * bump, get_homing_bump_feedrate(axis));
-
-#if HOMING_Z_WITH_PROBE && ENABLED(BLTOUCH)
-        if (axis == Z_AXIS)
-            bltouch.stow(); // The final STOW
-#endif
-    }
 
 #if HAS_EXTRA_ENDSTOPS
     const bool pos_dir = axis_home_dir > 0;
