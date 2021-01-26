@@ -64,7 +64,16 @@ void home_Marlin(const AxisEnum axis, int dir, bool reset_position = false) {
         print_position(axis);
         sync_plan_position();
         print_position(axis);
-        destination[axis] = current_position[axis];
+
+        if (axis == X_AXIS) {
+            /// set position
+            abce_pos_t target;
+            target = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
+            target[axis] = X_MAX_POS + .5f;
+            planner.set_machine_position_mm(target);
+        }
+
+        // destination[axis] = current_position[axis];
         print_position(axis);
         // current_position.pos[axis] = 0;
     }
