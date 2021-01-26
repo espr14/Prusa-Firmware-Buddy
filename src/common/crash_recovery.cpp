@@ -13,8 +13,8 @@ void do_homing_move_crash(const AxisEnum axis, float distance, const feedRate_t 
     if (!(axis == X_AXIS || axis == Y_AXIS))
         return;
 
-    if ((home_dir(axis) > 0) != (distance > 0))
-        distance = -distance;
+    // if ((home_dir(axis) > 0) != (distance > 0))
+    //     distance = -distance;
     const feedRate_t real_fr_mm_s = fr_mm_s ?: homing_feedrate(axis);
 
     /// move back
@@ -38,12 +38,14 @@ void do_homing_move_crash(const AxisEnum axis, float distance, const feedRate_t 
     endstops.validate_homing_move();
 }
 
-void home_Marlin(const AxisEnum axis, int dir, bool reset_position) {
+void home_Marlin(const AxisEnum axis, int dir) {
+    if (!(dir == 1 || dir == -1))
+        return;
 
     endstops.enable(true);
     // #define CAN_HOME_X true
     // #define CAN_HOME_Y true
-    do_homing_move_crash(axis, 1.5f * max_length(axis));
+    do_homing_move_crash(axis, 1.5f * max_length(axis) * dir);
     set_axis_is_at_home(axis);
     sync_plan_position();
     destination[axis] = current_position[axis];
@@ -97,7 +99,7 @@ void crash_recovery() {
     display::FillRect(Rect16(0, 0, 10, 10), COLOR_ORANGE);
 
     // home_to_start_Marlin(X_AXIS);
-    home_Marlin(X_AXIS, 1, false);
+    home_Marlin(X_AXIS, 1);
 
     const uint32_t m_StartPos_usteps = stepper.position((AxisEnum)X_AXIS);
 
