@@ -13,22 +13,20 @@ void do_homing_move_crash(const AxisEnum axis, float distance, const feedRate_t 
     if (!(axis == X_AXIS || axis == Y_AXIS))
         return;
 
-    // Only do some things when moving towards an endstop
-    // const int8_t axis_home_dir = home_dir(axis);
-    // const bool is_home_dir = (axis_home_dir > 0) == (distance > 0);
     if ((home_dir(axis) > 0) != (distance > 0))
         distance = -distance;
     const feedRate_t real_fr_mm_s = fr_mm_s ?: homing_feedrate(axis);
 
+    /// move back
     abce_pos_t target = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
     target[axis] = 0;
     planner.set_machine_position_mm(target);
-    float dist = (distance > 0) ? -MOVE_BACK_BEFORE_HOMING_DISTANCE : MOVE_BACK_BEFORE_HOMING_DISTANCE;
-    target[axis] = dist;
+    target[axis] = (distance > 0) ? -MOVE_BACK_BEFORE_HOMING_DISTANCE : MOVE_BACK_BEFORE_HOMING_DISTANCE;
     // Set delta/cartesian axes directly
     planner.buffer_segment(target, real_fr_mm_s / 4, active_extruder);
     planner.synchronize();
 
+    /// home
     target = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
     target[axis] = 0;
     planner.set_machine_position_mm(target);
