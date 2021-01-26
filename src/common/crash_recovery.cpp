@@ -9,6 +9,12 @@
 #include "../../Marlin/src/module/planner.h"
 #include "../../Marlin/src/module/stepper.h"
 
+void print_position(const int axis) {
+    char text[10];
+    snprintf(text, 10, "%f", (double)current_position.pos[axis]);
+    display::DrawText(Rect16(0, 0, 100, 100), string_view_utf8::MakeRAM((const uint8_t *)text), GuiDefaults::Font, COLOR_BLACK, COLOR_WHITE);
+}
+
 void do_homing_move_crash(const AxisEnum axis, float distance, const feedRate_t fr_mm_s = 0.0) {
     if (!(axis == X_AXIS || axis == Y_AXIS))
         return;
@@ -38,21 +44,33 @@ void do_homing_move_crash(const AxisEnum axis, float distance, const feedRate_t 
     endstops.validate_homing_move();
 }
 
-void home_Marlin(const AxisEnum axis, int dir) {
+void home_Marlin(const AxisEnum axis, int dir, bool reset_position = false) {
     if (!(dir == 1 || dir == -1))
         return;
 
+    print_position(axis);
     endstops.enable(true);
+    print_position(axis);
     // #define CAN_HOME_X true
     // #define CAN_HOME_Y true
     do_homing_move_crash(axis, 1.5f * max_length(axis) * dir);
-    set_axis_is_at_home(axis);
-    sync_plan_position();
-    destination[axis] = current_position[axis];
-    current_position.pos[axis] = 0;
+    print_position(axis);
 
+    if (reset_position) {
+        print_position(axis);
+        set_axis_is_at_home(axis);
+        print_position(axis);
+        sync_plan_position();
+        print_position(axis);
+        destination[axis] = current_position[axis];
+        print_position(axis);
+        // current_position.pos[axis] = 0;
+    }
+
+    print_position(axis);
     endstops.not_homing();
     // line_to_current_position(100);
+    print_position(axis);
     planner.synchronize();
 }
 
@@ -99,22 +117,22 @@ void crash_recovery() {
     display::FillRect(Rect16(0, 0, 10, 10), COLOR_ORANGE);
 
     // home_to_start_Marlin(X_AXIS);
-    home_Marlin(X_AXIS, 1);
+    home_Marlin(X_AXIS, 1, true);
 
     const uint32_t m_StartPos_usteps = stepper.position((AxisEnum)X_AXIS);
 
-    // home_Marlin(X_AXIS, -1, false);
+    // home_Marlin(X_AXIS, -1);
 
-    display::FillRect(Rect16(0, 0, 10, 10), COLOR_WHITE);
+    // display::FillRect(Rect16(0, 0, 10, 10), COLOR_WHITE);
 
-    marlin_print_resume();
+    // marlin_print_resume();
 
     const int32_t endPos_usteps = stepper.position((AxisEnum)X_AXIS);
     const int32_t length_usteps = endPos_usteps - m_StartPos_usteps;
     const float length_mm = (length_usteps * planner.steps_to_mm[(AxisEnum)X_AXIS]);
-    if (182 <= length_mm && length_mm <= 190) {
-        display::FillRect(Rect16(0, 0, 10, 10), COLOR_LIME);
-    } else {
-        display::FillRect(Rect16(0, 0, 10, 10), COLOR_RED);
-    }
+    // if (182 <= length_mm && length_mm <= 190) {
+    //     display::FillRect(Rect16(0, 0, 10, 10), COLOR_LIME);
+    // } else {
+    //     display::FillRect(Rect16(0, 0, 10, 10), COLOR_RED);
+    // }
 }
