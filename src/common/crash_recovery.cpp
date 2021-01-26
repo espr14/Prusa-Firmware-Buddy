@@ -9,25 +9,27 @@
 #include "../../Marlin/src/module/planner.h"
 #include "../../Marlin/src/module/stepper.h"
 
-void do_homing_move_crash(const AxisEnum axis, const float distance, const feedRate_t fr_mm_s = 0.0) {
+void do_homing_move_crash(const AxisEnum axis, float distance, const feedRate_t fr_mm_s = 0.0) {
+    if (!(axis == X_AXIS || axis == Y_AXIS))
+        return;
 
     // Only do some things when moving towards an endstop
-    const int8_t axis_home_dir = home_dir(axis);
-    const bool is_home_dir = (axis_home_dir > 0) == (distance > 0);
+    // const int8_t axis_home_dir = home_dir(axis);
+    // const bool is_home_dir = (axis_home_dir > 0) == (distance > 0);
+    if ((home_dir(axis) > 0) != (distance > 0))
+        distance = -distance;
     const feedRate_t real_fr_mm_s = fr_mm_s ?: homing_feedrate(axis);
 
-    if ((axis == X_AXIS) || (axis == Y_AXIS)) {
-        abce_pos_t target = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
-        target[axis] = 0;
-        planner.set_machine_position_mm(target);
-        float dist = (distance > 0) ? -MOVE_BACK_BEFORE_HOMING_DISTANCE : MOVE_BACK_BEFORE_HOMING_DISTANCE;
-        target[axis] = dist;
-        // Set delta/cartesian axes directly
-        planner.buffer_segment(target, real_fr_mm_s / 4, active_extruder);
-        planner.synchronize();
-    }
-
     abce_pos_t target = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
+    target[axis] = 0;
+    planner.set_machine_position_mm(target);
+    float dist = (distance > 0) ? -MOVE_BACK_BEFORE_HOMING_DISTANCE : MOVE_BACK_BEFORE_HOMING_DISTANCE;
+    target[axis] = dist;
+    // Set delta/cartesian axes directly
+    planner.buffer_segment(target, real_fr_mm_s / 4, active_extruder);
+    planner.synchronize();
+
+    target = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
     target[axis] = 0;
     planner.set_machine_position_mm(target);
     target[axis] = distance;
@@ -35,10 +37,7 @@ void do_homing_move_crash(const AxisEnum axis, const float distance, const feedR
     // Set delta/cartesian axes directly
     planner.buffer_segment(target, real_fr_mm_s, active_extruder);
     planner.synchronize();
-
-    if (is_home_dir) {
-        endstops.validate_homing_move();
-    }
+    endstops.validate_homing_move();
 }
 
 void home_Marlin(const AxisEnum axis, int dir, bool reset_position) {
@@ -46,7 +45,7 @@ void home_Marlin(const AxisEnum axis, int dir, bool reset_position) {
     endstops.enable(true);
     // #define CAN_HOME_X true
     // #define CAN_HOME_Y true
-    do_homing_move_crash(axis, 1.5f * max_length(axis) * home_dir(axis));
+    do_homing_move_crash(axis, 1.5f * max_length(axis));
     set_axis_is_at_home(axis);
     sync_plan_position();
     destination[axis] = current_position[axis];
