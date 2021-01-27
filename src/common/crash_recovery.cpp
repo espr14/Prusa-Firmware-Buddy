@@ -147,7 +147,8 @@ void crash_recovery() {
     print_all(X_AXIS);
 
     // home_to_start_Marlin(X_AXIS);
-    // home_Marlin(X_AXIS, 1, true);
+    home_Marlin(X_AXIS, 1, true);
+    print_all(X_AXIS);
 
     // const uint32_t m_StartPos_usteps = stepper.position((AxisEnum)X_AXIS);
 
