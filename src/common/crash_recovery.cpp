@@ -88,7 +88,7 @@ void home_Marlin(const AxisEnum axis, int dir, bool reset_position = false) {
             /// set position
             abce_pos_t target;
             target = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
-            target[axis] = X_MAX_POS + .5f;
+            target[axis] = X_MAX_POS;
             planner.set_machine_position_mm(target);
         }
 
@@ -144,27 +144,35 @@ void crash_recovery() {
     while (marlin_vars()->print_state != mpsPaused)
         gui_loop();
 
-    print_all(X_AXIS);
+    // print_all(X_AXIS);
 
     // home_to_start_Marlin(X_AXIS);
     home_Marlin(X_AXIS, 1, true);
-    print_all(X_AXIS);
+    // print_all(X_AXIS);
 
     // const uint32_t m_StartPos_usteps = stepper.position((AxisEnum)X_AXIS);
+    float length = planner.get_axis_position_mm(X_AXIS);
+
+    // current_position.pos[X_AXIS] = 10;
+    // line_to_current_position(100);
+    // planner.synchronize();
 
     home_Marlin(X_AXIS, -1);
-    print_all(X_AXIS);
+    // print_all(X_AXIS);
 
-    // display::FillRect(Rect16(0, 0, 10, 10), COLOR_WHITE);
+    // char text[10];
+    // snprintf(text, 10, "%f", (double)planner.get_axis_position_mm(X_AXIS));
+    // display::DrawText(Rect16(0, 0, 100, 15), string_view_utf8::MakeRAM((const uint8_t *)text), GuiDefaults::Font, COLOR_BLACK, COLOR_WHITE);
 
-    // marlin_print_resume();
+    length -= planner.get_axis_position_mm(X_AXIS);
+    // char text[10];
+    // snprintf(text, 10, "%f", (double)length);
+    // display::DrawText(Rect16(0, 0, 100, 15), string_view_utf8::MakeRAM((const uint8_t *)text), GuiDefaults::Font, COLOR_BLACK, COLOR_WHITE);
+
+    if (182 <= length && length <= 190)
+        marlin_print_resume();
 
     // const int32_t endPos_usteps = stepper.position((AxisEnum)X_AXIS);
     // const int32_t length_usteps = endPos_usteps - m_StartPos_usteps;
     // const float length_mm = (length_usteps * planner.steps_to_mm[(AxisEnum)X_AXIS]);
-    // if (182 <= length_mm && length_mm <= 190) {
-    //     display::FillRect(Rect16(0, 0, 10, 10), COLOR_LIME);
-    // } else {
-    //     display::FillRect(Rect16(0, 0, 10, 10), COLOR_RED);
-    // }
 }
