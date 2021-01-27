@@ -9,10 +9,35 @@
 #include "../../Marlin/src/module/planner.h"
 #include "../../Marlin/src/module/stepper.h"
 
-void print_position(const AxisEnum axis) {
+void print_axis_position(const AxisEnum axis) {
     char text[10];
     snprintf(text, 10, "%f", (double)planner.get_axis_position_mm(axis));
     display::DrawText(Rect16(0, 0, 100, 15), string_view_utf8::MakeRAM((const uint8_t *)text), GuiDefaults::Font, COLOR_BLACK, COLOR_WHITE);
+}
+
+void print_current_position(const AxisEnum axis) {
+    char text[10];
+    snprintf(text, 10, "%f", (double)current_position.pos[axis]);
+    display::DrawText(Rect16(0, 20, 100, 15), string_view_utf8::MakeRAM((const uint8_t *)text), GuiDefaults::Font, COLOR_BLACK, COLOR_WHITE);
+}
+
+void print_stepper_position(const AxisEnum axis) {
+    char text[10];
+    snprintf(text, 10, "%f", (double)(stepper.position(axis) * planner.steps_to_mm[axis]));
+    display::DrawText(Rect16(0, 40, 100, 15), string_view_utf8::MakeRAM((const uint8_t *)text), GuiDefaults::Font, COLOR_BLACK, COLOR_WHITE);
+}
+
+void print_offset(const AxisEnum axis) {
+    char text[10];
+    snprintf(text, 10, "%f", (double)position_shift[axis]);
+    display::DrawText(Rect16(0, 60, 100, 15), string_view_utf8::MakeRAM((const uint8_t *)text), GuiDefaults::Font, COLOR_BLACK, COLOR_RED);
+}
+
+void print_all(const AxisEnum axis) {
+    print_axis_position(axis);
+    print_current_position(axis);
+    print_stepper_position(axis);
+    print_offset(axis);
 }
 
 void do_homing_move_crash(const AxisEnum axis, float distance) {
@@ -49,21 +74,15 @@ void home_Marlin(const AxisEnum axis, int dir, bool reset_position = false) {
     if (!(dir == 1 || dir == -1))
         return;
 
-    print_position(axis);
     endstops.enable(true);
-    print_position(axis);
     // #define CAN_HOME_X true
     // #define CAN_HOME_Y true
     do_homing_move_crash(axis, 1.5f * max_length(axis) * dir);
     planner.synchronize();
-    print_position(axis);
 
     if (reset_position) {
-        print_position(axis);
         set_axis_is_at_home(axis);
-        print_position(axis);
         sync_plan_position();
-        print_position(axis);
 
         if (axis == X_AXIS) {
             /// set position
@@ -74,15 +93,15 @@ void home_Marlin(const AxisEnum axis, int dir, bool reset_position = false) {
         }
 
         // destination[axis] = current_position[axis];
-        print_position(axis);
         // current_position.pos[axis] = 0;
     }
 
-    print_position(axis);
     endstops.not_homing();
     // line_to_current_position(100);
-    print_position(axis);
     planner.synchronize();
+    // synchronize positions
+    current_position.pos[axis] = planner.get_axis_position_mm(axis);
+    sync_plan_position();
 }
 
 void home_to_start_Marlin(AxisEnum axis) {
@@ -125,14 +144,15 @@ void crash_recovery() {
     while (marlin_vars()->print_state != mpsPaused)
         gui_loop();
 
-    display::FillRect(Rect16(0, 0, 10, 10), COLOR_ORANGE);
+    print_all(X_AXIS);
 
     // home_to_start_Marlin(X_AXIS);
-    home_Marlin(X_AXIS, 1, true);
+    // home_Marlin(X_AXIS, 1, true);
 
     // const uint32_t m_StartPos_usteps = stepper.position((AxisEnum)X_AXIS);
 
     home_Marlin(X_AXIS, -1);
+    print_all(X_AXIS);
 
     // display::FillRect(Rect16(0, 0, 10, 10), COLOR_WHITE);
 
