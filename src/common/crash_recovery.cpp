@@ -85,9 +85,13 @@ void home_Marlin(const AxisEnum axis, int dir, bool reset_position = false) {
             current_position.pos[axis] = target[axis];
             /// update low level position counters
             sync_plan_position();
+            planner.set_machine_position_mm(target);
         }
     }
     endstops.not_homing();
+    planner.synchronize();
+    current_position.pos[axis] = planner.get_axis_position_mm(axis);
+    sync_plan_position();
 }
 
 void crash_recovery() {
