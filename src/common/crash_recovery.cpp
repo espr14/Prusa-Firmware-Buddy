@@ -82,9 +82,6 @@ void home_Marlin(const AxisEnum axis, int dir, bool reset_position = false) {
             abce_pos_t target;
             target = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
             target[axis] = X_MAX_POS;
-            current_position.pos[axis] = target[axis];
-            /// update low level position counters
-            sync_plan_position();
             planner.set_machine_position_mm(target);
         }
     }
@@ -95,6 +92,7 @@ void home_Marlin(const AxisEnum axis, int dir, bool reset_position = false) {
 }
 
 void crash_recovery() {
+
     marlin_print_pause();
     while (marlin_vars()->print_state != mpsPaused)
         gui_loop();
