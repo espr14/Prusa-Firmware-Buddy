@@ -464,6 +464,45 @@ int marlin_server_print_reheat_ready(void) {
     return 0;
 }
 
+void marlin_server_homing_start(AxisEnum axis, const bool positive_dir) {
+    endstops.enable(true);
+    const int dir = positive_dir ? 1 : -1;
+    const float distance = 1.5f * max_length(axis) *dir const feedRate_t real_fr_mm_s = homing_feedrate(axis);
+    abce_pos_t target;
+
+    target = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
+    target[axis] += distance;
+
+    planner.buffer_segment(target, real_fr_mm_s, active_extruder);
+}
+
+void marlin_server_homing_finish(AxisEnum axis, const bool positive_dir, const bool reset_position) {
+    planner.synchronize();
+    /// reset number of crashes
+    endstops.validate_homing_move();
+
+    if (reset_position) {
+        set_axis_is_at_home(axis);
+        sync_plan_position();
+
+        if (axis == X_AXIS) {
+            /// set position
+            abce_pos_t target;
+            target = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
+            target[axis] = X_MAX_POS;
+            planner.set_machine_position_mm(target);
+        }
+    }
+    endstops.not_homing();
+    planner.synchronize();
+    current_position.pos[axis] = planner.get_axis_position_mm(axis);
+    sync_plan_position();
+}
+
+void marlin_server_homing_finish(AxisEnum axis) {
+    homing_finish(axis, false, false);
+}
+
 static void _server_print_loop(void) {
     switch (marlin_server.print_state) {
     case mpsIdle:
@@ -598,24 +637,40 @@ static void _server_print_loop(void) {
 #if FAN_COUNT > 0
         thermalManager.set_fan_speed(0, 0); //disable print fan
 #endif
+        marlin_server_park_head();
         marlin_server.print_state = mpsCrashRecovery_Lifting;
         break;
     case mpsCrashRecovery_Lifting:
         if ((planner.movesplanned() == 0) && (queue.length == 0)) {
-            marlin_server_park_head();
+            marlin_server_homing_start(X_AXIS, true);
             marlin_server.print_state = mpsCrashRecovery_X_HOME;
         }
         break;
     case mpsCrashRecovery_X_HOME:
-        marlin_server.print_state = mpsCrashRecovery_X_END;
+        if (planner.movesplanned() == 0) {
+            marlin_server_homing_finish(X_AXIS, true, true);
+            marlin_server_homing_start(X_AXIS, false);
+            marlin_server.print_state = mpsCrashRecovery_X_END;
+        }
         break;
     case mpsCrashRecovery_X_END:
-        marlin_server.print_state = mpsCrashRecovery_Y_HOME;
+        if (planner.movesplanned() == 0) {
+            marlin_server_homing_finish(X_AXIS);
+            marlin_server_homing_start(Y_AXIS, false);
+            marlin_server.print_state = mpsCrashRecovery_Y_HOME;
+        }
         break;
     case mpsCrashRecovery_Y_HOME:
-        marlin_server.print_state = mpsCrashRecovery_Y_END;
+        if (planner.movesplanned() == 0) {
+            marlin_server_homing_finish(Y_AXIS, false, true);
+            marlin_server_homing_start(Y_AXIS, true);
+            marlin_server.print_state = mpsCrashRecovery_Y_END;
+        }
         break;
     case mpsCrashRecovery_Y_END:
+        if (planner.movesplanned() == 0) {
+            marlin_server_homing_finish(Y_AXIS);
+        }
         marlin_server.print_state = mpsCrashRecovery_Pausing;
         marlin_server.print_state = mpsResuming_Begin;
         break;
@@ -662,7 +717,7 @@ void marlin_server_resuming_begin(void) {
     }
 }
 
-void marlin_server_park_head(void) {
+void marlin_server_park_head(bool after_crash = false) {
     constexpr feedRate_t fr_xy = NOZZLE_PARK_XY_FEEDRATE, fr_z = NOZZLE_PARK_Z_FEEDRATE;
     constexpr xyz_pos_t park = NOZZLE_PARK_POINT;
     //homed check
@@ -676,8 +731,10 @@ void marlin_server_park_head(void) {
         line_to_current_position(PAUSE_PARK_RETRACT_FEEDRATE);
         current_position.z = _MIN(current_position.z + park.z, Z_MAX_POS);
         line_to_current_position(fr_z);
-        current_position.set(park.x, park.y);
-        line_to_current_position(fr_xy);
+        if (!after_crash) {
+            current_position.set(park.x, park.y);
+            line_to_current_position(fr_xy);
+        }
     }
 }
 

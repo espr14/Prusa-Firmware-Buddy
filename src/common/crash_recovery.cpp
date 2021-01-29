@@ -66,11 +66,9 @@ void do_homing_move_crash(const AxisEnum axis, float distance) {
     endstops.validate_homing_move();
 }
 
-void home_Marlin(const AxisEnum axis, int dir, bool reset_position = false) {
-    if (!(dir == 1 || dir == -1))
-        return;
-
+void home_axis_blocking(const AxisEnum axis, const bool positive_dir, const bool reset_position = false) {
     endstops.enable(true);
+    const int dir = positive_dir ? 1 : -1;
     do_homing_move_crash(axis, 1.5f * max_length(axis) * dir);
 
     if (reset_position) {
@@ -181,8 +179,6 @@ void crash_recovery() {
     display::FillRect(Rect16(229, 0, 10, 10), COLOR_OLIVE);
     print_all(X_AXIS);
 
-    ///TODO: handle marlin server
-
     marlin_print_pause();
     display::FillRect(Rect16(229, 0, 10, 10), COLOR_SILVER);
 
@@ -192,9 +188,9 @@ void crash_recovery() {
     }
     display::FillRect(Rect16(229, 0, 10, 10), COLOR_LIME);
 
-    home_Marlin(X_AXIS, 1, true);
+    home_axis(X_AXIS, true, true);
     float length[2] = { planner.get_axis_position_mm(X_AXIS), planner.get_axis_position_mm(Y_AXIS) };
-    home_Marlin(X_AXIS, -1);
+    home_axis(X_AXIS, false);
     length[0] -= planner.get_axis_position_mm(X_AXIS);
     length[1] -= planner.get_axis_position_mm(Y_AXIS);
     bool axis_ok[2] = { false, false };
