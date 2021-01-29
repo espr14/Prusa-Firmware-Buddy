@@ -589,6 +589,40 @@ static void _server_print_loop(void) {
             fsm_destroy(ClientFSM::Printing);
         }
         break;
+
+    case mpsCrashRecovery_Begin:
+        media_print_pause();
+        print_job_timer.pause();
+        marlin_server.resume_nozzle_temp = marlin_server.vars.target_nozzle; //save nozzle target temp
+        marlin_server.resume_fan_speed = marlin_server.vars.fan_speed;       //save fan speed
+#if FAN_COUNT > 0
+        thermalManager.set_fan_speed(0, 0); //disable print fan
+#endif
+        marlin_server.print_state = mpsCrashRecovery_Lifting;
+        break;
+    case mpsCrashRecovery_Lifting:
+        if ((planner.movesplanned() == 0) && (queue.length == 0)) {
+            marlin_server_park_head();
+            marlin_server.print_state = mpsCrashRecovery_X_HOME;
+        }
+        break;
+    case mpsCrashRecovery_X_HOME:
+        marlin_server.print_state = mpsCrashRecovery_X_END;
+        break;
+    case mpsCrashRecovery_X_END:
+        marlin_server.print_state = mpsCrashRecovery_Y_HOME;
+        break;
+    case mpsCrashRecovery_Y_HOME:
+        marlin_server.print_state = mpsCrashRecovery_Y_END;
+        break;
+    case mpsCrashRecovery_Y_END:
+        marlin_server.print_state = mpsCrashRecovery_Pausing;
+        marlin_server.print_state = mpsResuming_Begin;
+        break;
+    case mpsCrashRecovery_Pausing:
+        marlin_server.print_state = mpsPaused;
+        break;
+
     default:
         break;
     }

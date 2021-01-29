@@ -163,21 +163,34 @@ void crash_recovery() {
     abce_pos_t position_machine;
     xyze_pos_t position_planned;
 
+    display::FillRect(Rect16(229, 0, 10, 10), COLOR_GREEN);
+
     print_all(X_AXIS);
 
     /// backup current position and planner buffer and clear the buffer to enable immediate movements
     crash_quick_stop(buffer_pointers, buffer);
     position_backup(position_machine, position_planned);
 
-    ///TODO: move up and park
+    // current_position.z += 20;
+    // line_to_current_position(homing_feedrate(Z_AXIS));
+    // while (planner.movesplanned() != 0 || queue.length != 0) {
+    //     gui_loop();
+    //     print_all(X_AXIS);
+    // }
 
+    display::FillRect(Rect16(229, 0, 10, 10), COLOR_OLIVE);
     print_all(X_AXIS);
 
+    ///TODO: handle marlin server
+
     marlin_print_pause();
+    display::FillRect(Rect16(229, 0, 10, 10), COLOR_SILVER);
+
     while (marlin_vars()->print_state != mpsPaused) {
         gui_loop();
         print_all(X_AXIS);
     }
+    display::FillRect(Rect16(229, 0, 10, 10), COLOR_LIME);
 
     home_Marlin(X_AXIS, 1, true);
     float length[2] = { planner.get_axis_position_mm(X_AXIS), planner.get_axis_position_mm(Y_AXIS) };
