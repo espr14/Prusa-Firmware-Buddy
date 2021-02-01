@@ -89,8 +89,23 @@ void home_axis_blocking(const AxisEnum axis, const bool positive_dir, const bool
     sync_plan_position();
 }
 
+void position_backup(abce_pos_t &machine, xyze_pos_t &planned) {
+    machine = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
+    for (int axis = X_AXIS; axis < E_AXIS; ++axis) {
+        planned[axis] = current_position.pos[axis];
+        current_position.pos[axis] = machine[axis];
+    }
+}
+
+void position_restore(abce_pos_t &machine, xyze_pos_t &planned) {
+    machine.pos[E_AXIS] = planner.get_axis_position_mm(E_AXIS);
+    planner.set_machine_position_mm(machine);
+    for (int axis = X_AXIS; axis < E_AXIS; ++axis)
+        current_position.pos[axis] = planned[axis];
+}
+
 /// like Planner::quick_stop but saves buffer for later restore
-void crash_quick_stop(uint8_t *buffer_pointers, block_t *buffer) {
+void crash_quick_stop(uint8_t *buffer_pointers, block_t *buffer, abce_pos_t &machine, xyze_pos_t &planned) {
     const bool was_enabled = STEPPER_ISR_ENABLED();
     if (was_enabled)
         DISABLE_STEPPER_DRIVER_INTERRUPT();
@@ -128,9 +143,10 @@ void crash_quick_stop(uint8_t *buffer_pointers, block_t *buffer) {
 
     /// copy buffer
     memcpy(buffer, Planner::block_buffer, sizeof(block_t) * BLOCK_BUFFER_SIZE);
+    position_backup(abce_pos_t & machine, xyze_pos_t & planned);
 }
 
-void restore_buffer(uint8_t *buffer_pointers, block_t *buffer) {
+void restore_planner_after_crash(uint8_t *buffer_pointers, block_t *buffer, abce_pos_t &machine, xyze_pos_t &planned) {
     memcpy(Planner::block_buffer, buffer, sizeof(block_t) * BLOCK_BUFFER_SIZE);
 
     Planner::block_buffer_head = buffer_pointers[0];
@@ -138,21 +154,6 @@ void restore_buffer(uint8_t *buffer_pointers, block_t *buffer) {
     Planner::block_buffer_planned = buffer_pointers[2];
     Planner::block_buffer_tail = buffer_pointers[3];
     Planner::delay_before_delivering = buffer_pointers[4];
-}
-
-void position_backup(abce_pos_t &machine, xyze_pos_t &planned) {
-    machine = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
-    for (int axis = X_AXIS; axis < E_AXIS; ++axis) {
-        planned[axis] = current_position.pos[axis];
-        current_position.pos[axis] = machine[axis];
-    }
-}
-
-void position_restore(abce_pos_t &machine, xyze_pos_t &planned) {
-    machine.pos[E_AXIS] = planner.get_axis_position_mm(E_AXIS);
-    planner.set_machine_position_mm(machine);
-    for (int axis = X_AXIS; axis < E_AXIS; ++axis)
-        current_position.pos[axis] = planned[axis];
 }
 
 void crash_recovery() {
@@ -166,8 +167,7 @@ void crash_recovery() {
     print_all(X_AXIS);
 
     /// backup current position and planner buffer and clear the buffer to enable immediate movements
-    crash_quick_stop(buffer_pointers, buffer);
-    position_backup(position_machine, position_planned);
+    crash_quick_stop(buffer_pointers, buffer, position_machine, position_planned);
 
     // current_position.z += 20;
     // line_to_current_position(homing_feedrate(Z_AXIS));
@@ -206,8 +206,7 @@ void crash_recovery() {
             gui_loop();
             print_all(X_AXIS);
         }
-        restore_buffer(buffer_pointers, buffer);
-        position_restore(position_machine, position_planned);
+        restore_planner_after_crash(buffer_pointers, buffer, position_machine, position_planned);
     }
     Planner::cleaning_buffer_counter = 0;
 }
