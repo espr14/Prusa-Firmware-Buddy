@@ -143,7 +143,7 @@ void crash_quick_stop(uint8_t *buffer_pointers, block_t *buffer, abce_pos_t &mac
 
     /// copy buffer
     memcpy(buffer, Planner::block_buffer, sizeof(block_t) * BLOCK_BUFFER_SIZE);
-    position_backup(abce_pos_t & machine, xyze_pos_t & planned);
+    position_backup(machine, planned);
 }
 
 void restore_planner_after_crash(uint8_t *buffer_pointers, block_t *buffer, abce_pos_t &machine, xyze_pos_t &planned) {
