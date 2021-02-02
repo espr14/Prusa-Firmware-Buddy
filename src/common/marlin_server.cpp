@@ -473,6 +473,13 @@ int marlin_server_print_reheat_ready(void) {
     return 0;
 }
 
+void marlin_server_print_crash(void) {
+    if (marlin_server.print_state == mpsPrinting) {
+        crash_quick_stop(marlin_server.buffer_pointers, marlin_server.buffer, marlin_server.position_machine, marlin_server.position_planned);
+        marlin_server.print_state = mpsCrashRecovery_Begin;
+    }
+}
+
 void marlin_server_homing_start(AxisEnum axis, const bool positive_dir) {
     endstops.enable(true);
     const int dir = positive_dir ? 1 : -1;
@@ -658,7 +665,6 @@ static void _server_print_loop(void) {
         break;
 
     case mpsCrashRecovery_Begin:
-        crash_quick_stop(marlin_server.buffer_pointers, marlin_server.buffer, marlin_server.position_machine, marlin_server.position_planned);
         media_print_pause();
         print_job_timer.pause();
         marlin_server.resume_nozzle_temp = marlin_server.vars.target_nozzle; //save nozzle target temp
@@ -1300,6 +1306,9 @@ static int _process_server_request(const char *request) {
         processed = 1;
     } else if (strcmp("!park", request) == 0) {
         marlin_server_park_head();
+        processed = 1;
+    } else if (strcmp("!pcrash", request) == 0) {
+        marlin_server_print_crash();
         processed = 1;
     } else if (sscanf(request, "!fsm_r %d", &ival) == 1) { //finit state machine response
         ClientResponseHandler::SetResponse(ival);
