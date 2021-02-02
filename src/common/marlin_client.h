@@ -185,6 +185,8 @@ extern void marlin_print_resume(void);
 
 extern void marlin_park_head(void);
 
+extern void marlin_print_crash();
+
 // returns 1 if reheating is in progress, otherwise 0
 extern int marlin_reheating(void);
 

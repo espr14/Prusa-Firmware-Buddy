@@ -664,7 +664,7 @@ void marlin_park_head(void) {
     _wait_ack_from_server(client->id);
 }
 
-void marlin_print_crash(void) {
+void marlin_print_crash() {
     marlin_client_t *client = _client_ptr();
     if (client == 0)
         return;
