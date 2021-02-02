@@ -38,7 +38,11 @@ void print_all(const AxisEnum axis) {
     // print_stepper_position(axis);
     print_offset(axis);
 }
-
+extern "C" {
+void print_cube(color_t color) {
+    display::FillRect(Rect16(0, 0, 10, 10), color);
+}
+}
 void do_homing_move_crash(const AxisEnum axis, float distance) {
     if (!(axis == X_AXIS || axis == Y_AXIS))
         return;

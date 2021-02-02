@@ -476,6 +476,11 @@ int marlin_server_print_reheat_ready(void) {
 void marlin_server_print_crash(void) {
     if (marlin_server.print_state == mpsPrinting) {
         crash_quick_stop(marlin_server.buffer_pointers, marlin_server.buffer, marlin_server.position_machine, marlin_server.position_planned);
+
+        // abce_pos_t target = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
+        // target[C_AXIS] += 5;
+        // planner.buffer_segment(target, homing_feedrate(C_AXIS), active_extruder);
+
         marlin_server.print_state = mpsCrashRecovery_Begin;
     }
 }
