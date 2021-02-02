@@ -6,7 +6,6 @@
 #include "gui.hpp"
 
 #include "../Marlin/src/module/endstops.h"
-#include "../../Marlin/src/module/planner.h"
 #include "../../Marlin/src/module/stepper.h"
 
 void print_axis_position(const AxisEnum axis) {
@@ -188,9 +187,9 @@ void crash_recovery() {
     }
     display::FillRect(Rect16(229, 0, 10, 10), COLOR_LIME);
 
-    home_axis(X_AXIS, true, true);
+    home_axis_blocking(X_AXIS, true, true);
     float length[2] = { planner.get_axis_position_mm(X_AXIS), planner.get_axis_position_mm(Y_AXIS) };
-    home_axis(X_AXIS, false);
+    home_axis_blocking(X_AXIS, false);
     length[0] -= planner.get_axis_position_mm(X_AXIS);
     length[1] -= planner.get_axis_position_mm(Y_AXIS);
     bool axis_ok[2] = { false, false };

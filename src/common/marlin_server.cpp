@@ -1,15 +1,17 @@
 // marlin_server.cpp
 
-#include "marlin_server.h"
-#include "marlin_server.hpp"
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h> //strncmp
+#include <assert.h>
+
+#include "crash_recovery.h"
+#include "marlin_server.h"
+#include "marlin_server.hpp"
 #include "dbg.h"
 #include "app.h"
 #include "bsod.h"
 #include "cmsis_os.h"
-#include <string.h> //strncmp
-#include <assert.h>
 
 #include "../Marlin/src/lcd/extensible_ui/ui_api.h"
 #include "../Marlin/src/gcode/queue.h"
@@ -512,8 +514,8 @@ void marlin_server_homing_finish(AxisEnum axis, const bool positive_dir, const b
     sync_plan_position();
 }
 
-void marlin_server_homing_finish(AxisEnum axis) {
-    homing_finish(axis, false, false);
+void marlin_server_homing_finish_axis(AxisEnum axis) {
+    marlin_server_homing_finish(axis, false, false);
 }
 
 bool axes_length_ok() {
@@ -682,7 +684,7 @@ static void _server_print_loop(void) {
         break;
     case mpsCrashRecovery_X_END:
         if (planner.movesplanned() == 0) {
-            marlin_server_homing_finish(X_AXIS);
+            marlin_server_homing_finish_axis(X_AXIS);
             marlin_server_homing_start(Y_AXIS, false);
             marlin_server.print_state = mpsCrashRecovery_Y_HOME;
         }
@@ -696,8 +698,8 @@ static void _server_print_loop(void) {
         break;
     case mpsCrashRecovery_Y_END:
         if (planner.movesplanned() == 0) {
-            marlin_server_homing_finish(Y_AXIS);
-            if (axis_length_ok) {
+            marlin_server_homing_finish_axis(Y_AXIS);
+            if (axes_length_ok()) {
                 marlin_server.print_state = mpsResuming_Begin;
                 Planner::cleaning_buffer_counter = 1000;
             } else {
@@ -748,7 +750,7 @@ void marlin_server_resuming_begin(void) {
     }
 }
 
-void marlin_server_park_head(bool after_crash = false) {
+void marlin_server_park_head(bool after_crash) {
     constexpr feedRate_t fr_xy = NOZZLE_PARK_XY_FEEDRATE, fr_z = NOZZLE_PARK_Z_FEEDRATE;
     constexpr xyz_pos_t park = NOZZLE_PARK_POINT;
     //homed check
