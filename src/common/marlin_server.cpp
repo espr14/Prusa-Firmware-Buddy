@@ -679,9 +679,11 @@ static void _server_print_loop(void) {
 #endif
         marlin_server_park_head(true);
         marlin_server.print_state = mpsCrashRecovery_Lifting;
+        print_cube(COLOR_RED);
         break;
     case mpsCrashRecovery_Lifting:
         if ((planner.movesplanned() == 0) && (queue.length == 0)) {
+            print_cube(COLOR_GREEN);
             marlin_server_homing_start(X_AXIS, true);
             marlin_server.print_state = mpsCrashRecovery_X_HOME;
         }

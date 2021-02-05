@@ -670,11 +670,8 @@ void marlin_print_crash() {
     marlin_client_t *client = _client_ptr();
     if (client == 0)
         return;
-    print_cube(COLOR_RED);
     _send_request_to_server(client->id, "!pcrash");
-    print_cube(COLOR_WHITE);
     _wait_ack_from_server(client->id);
-    print_cube(COLOR_GREEN);
 }
 
 // returns 1 if reheating is in progress, otherwise 0

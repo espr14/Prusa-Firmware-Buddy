@@ -24,6 +24,8 @@
  * motion.cpp
  */
 
+// clang-format off
+
 #include "motion.h"
 #include "endstops.h"
 #include "stepper.h"
@@ -101,6 +103,8 @@ bool relative_mode; // = false;
 
 /**
  * Cartesian Current Position
+ *   Planned position. Printer is heading to this position or is at this position.
+ *   You can compute current position from get_cartesian_from_steppers().
  *   Used to track the native machine position as moves are queued.
  *   Used by 'line_to_current_position' to do a move after changing it.
  *   Used by 'sync_plan_position' to update 'planner.position'.
@@ -346,6 +350,7 @@ void _internal_move_to_destination(const feedRate_t &fr_mm_s/*=0.0f*/
 
 /**
  * Plan a move to (X, Y, Z) and set the current_position
+ * Moves XY and Z independently. Raise before, lower after XY motion
  */
 void do_blocking_move_to(const float rx, const float ry, const float rz, const feedRate_t &fr_mm_s/*=0.0*/) {
   if (DEBUGGING(LEVELING)) DEBUG_XYZ(">>> do_blocking_move_to", rx, ry, rz);
