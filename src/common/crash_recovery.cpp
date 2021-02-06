@@ -135,7 +135,7 @@ void crash_quick_stop(uint8_t *buffer_pointers, block_t *buffer, abce_pos_t &mac
 #endif
 
     // Make sure to drop any attempt of queuing moves for at least 1 second
-    Planner::cleaning_buffer_counter = 1000;
+    // Planner::cleaning_buffer_counter = 1000;
 
     // Reenable Stepper ISR
     if (was_enabled)

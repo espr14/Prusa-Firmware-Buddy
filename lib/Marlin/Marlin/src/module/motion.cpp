@@ -349,10 +349,10 @@ void _internal_move_to_destination(const feedRate_t &fr_mm_s/*=0.0f*/
 }
 
 /**
- * Plan a move to (X, Y, Z) and set the current_position
- * Moves XY and Z independently. Raise before, lower after XY motion
+ * Plans a (non-blocking) move to (X, Y, Z) and sets the current_position
+ * Move XY and Z independently. Raise before, lower after XY motion
  */
-void do_blocking_move_to(const float rx, const float ry, const float rz, const feedRate_t &fr_mm_s/*=0.0*/) {
+void do_move_to(const float rx, const float ry, const float rz, const feedRate_t &fr_mm_s/*=0.0*/) {
   if (DEBUGGING(LEVELING)) DEBUG_XYZ(">>> do_blocking_move_to", rx, ry, rz);
 
   const feedRate_t z_feedrate = fr_mm_s ?: homing_feedrate(Z_AXIS),
@@ -438,7 +438,14 @@ void do_blocking_move_to(const float rx, const float ry, const float rz, const f
   #endif
 
   if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("<<< do_blocking_move_to");
+}
 
+/**
+ * Perform a blocking move to (X, Y, Z) and set the current_position
+ * Move XY and Z independently. Raise before, lower after XY motion
+ */
+void do_blocking_move_to(const float rx, const float ry, const float rz, const feedRate_t &fr_mm_s/*=0.0*/) {
+  do_move_to(rx, ry, rz, fr_mm_s);
   planner.synchronize();
 }
 

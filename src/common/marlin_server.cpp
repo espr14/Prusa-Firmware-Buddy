@@ -537,6 +537,18 @@ bool axes_length_ok() {
         && marlin_server.axis_length[1] <= 190;
 }
 
+void marlin_server_park_crashed_head() {
+    marlin_server.resume_pos[0] = current_position.x;
+    marlin_server.resume_pos[1] = current_position.y;
+    marlin_server.resume_pos[2] = current_position.z;
+    marlin_server.resume_pos[3] = current_position.e;
+    current_position.e -= PAUSE_PARK_RETRACT_LENGTH;
+    line_to_current_position(PAUSE_PARK_RETRACT_FEEDRATE);
+    const xyz_pos_t park = NOZZLE_PARK_POINT;
+    current_position.z = _MIN(current_position.z + park.z, Z_MAX_POS);
+    line_to_current_position(NOZZLE_PARK_Z_FEEDRATE);
+}
+
 static void _server_print_loop(void) {
     switch (marlin_server.print_state) {
     case mpsIdle:
@@ -677,13 +689,11 @@ static void _server_print_loop(void) {
 #if FAN_COUNT > 0
         thermalManager.set_fan_speed(0, 0); //disable print fan
 #endif
-        marlin_server_park_head(true);
+        marlin_server_park_crashed_head();
         marlin_server.print_state = mpsCrashRecovery_Lifting;
-        print_cube(COLOR_RED);
         break;
     case mpsCrashRecovery_Lifting:
         if ((planner.movesplanned() == 0) && (queue.length == 0)) {
-            print_cube(COLOR_GREEN);
             marlin_server_homing_start(X_AXIS, true);
             marlin_server.print_state = mpsCrashRecovery_X_HOME;
         }
@@ -762,6 +772,11 @@ void marlin_server_resuming_begin(void) {
         marlin_server.print_state = mpsResuming_Reheating;
     }
 }
+
+// void raise_and_retract(float dz, float de, const feedRate_t &fr_z, const feedRate_t &fr_e) {
+//     const float tz = dz / fr_z;
+//     const float te = de / fr_e;
+// }
 
 void marlin_server_park_head(bool after_crash) {
     constexpr feedRate_t fr_xy = NOZZLE_PARK_XY_FEEDRATE, fr_z = NOZZLE_PARK_Z_FEEDRATE;
