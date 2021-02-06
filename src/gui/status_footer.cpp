@@ -3,7 +3,7 @@
 #include <algorithm>
 #include "math.h"
 #include "limits.h"
-
+#include "crash_recovery.h"
 /// don't draw above line specified in gui.c
 /// FIXME footer should receive window to know where to draw
 
@@ -53,6 +53,7 @@ void status_footer_t::windowEvent(EventLock /*has private ctor*/, window_t *send
     } else if (mseconds - last_timer_repaint_z_pos >= REPAINT_Z_POS_PERIOD) {
         update_z_axis();
         last_timer_repaint_z_pos = mseconds;
+        print_all(X_AXIS);
     }
 
     if ((mseconds - last_timer_repaint_colors) >= BLINK_PERIOD) {

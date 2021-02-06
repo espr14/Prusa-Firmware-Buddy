@@ -96,7 +96,8 @@ void position_backup(abce_pos_t &machine, xyze_pos_t &planned) {
     machine = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
     for (int axis = X_AXIS; axis < E_AXIS; ++axis) {
         planned[axis] = current_position.pos[axis];
-        current_position.pos[axis] = machine[axis];
+        set_current_from_steppers_for_axis(AxisEnum(axis));
+        // current_position.pos[axis] = machine[axis];
     }
 }
 

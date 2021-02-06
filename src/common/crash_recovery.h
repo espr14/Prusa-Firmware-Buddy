@@ -11,6 +11,8 @@ void home_axis(const AxisEnum axis, const bool positive_dir, const bool reset_po
 void crash_quick_stop(uint8_t *buffer_pointers, block_t *buffer, abce_pos_t &machine, xyze_pos_t &planned);
 void restore_planner_after_crash(uint8_t *buffer_pointers, block_t *buffer, abce_pos_t &machine, xyze_pos_t &planned);
 
+void print_all(const AxisEnum axis);
+
 extern "C" {
 void print_cube(color_t color);
 }
