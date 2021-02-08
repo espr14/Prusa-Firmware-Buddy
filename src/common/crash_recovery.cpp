@@ -36,7 +36,7 @@ void print_all(const AxisEnum axis) {
     print_axis_position(axis);
     print_current_position(axis);
     // print_stepper_position(axis);
-    print_offset(axis);
+    // print_offset(axis);
 }
 extern "C" {
 void print_cube(color_t color) {
@@ -99,6 +99,7 @@ void position_backup(abce_pos_t &machine, xyze_pos_t &planned) {
         set_current_from_steppers_for_axis(AxisEnum(axis));
         // current_position.pos[axis] = machine[axis];
     }
+    sync_plan_position();
 }
 
 void position_restore(abce_pos_t &machine, xyze_pos_t &planned) {
