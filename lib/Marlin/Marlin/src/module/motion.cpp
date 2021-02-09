@@ -288,6 +288,16 @@ void set_current_from_steppers_for_axis(const AxisEnum axis) {
     current_position[axis] = cartes[axis];
 }
 
+
+/**
+ * Set the current_position for all axes based on
+ * the stepper positions, removing any leveling that
+ * may have been applied.
+ */
+void set_current_from_steppers() {
+  set_current_from_steppers_for_axis(ALL_AXES);
+}
+
 /**
  * Move the planner to the current position from wherever it last moved
  * (or from wherever it has been told it is located).

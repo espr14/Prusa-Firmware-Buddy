@@ -474,15 +474,19 @@ int marlin_server_print_reheat_ready(void) {
 }
 
 void marlin_server_print_crash(void) {
-    if (marlin_server.print_state == mpsPrinting) {
-        crash_quick_stop(marlin_server.buffer_pointers, marlin_server.buffer, marlin_server.position_machine, marlin_server.position_planned);
+    if (marlin_server.print_state != mpsPrinting)
+        return;
 
-        // abce_pos_t target = { planner.get_axis_position_mm(A_AXIS), planner.get_axis_position_mm(B_AXIS), planner.get_axis_position_mm(C_AXIS), planner.get_axis_position_mm(E_AXIS) };
-        // target[C_AXIS] += 5;
-        // planner.buffer_segment(target, homing_feedrate(C_AXIS), active_extruder);
+    crash_quick_stop(marlin_server.buffer_pointers, marlin_server.buffer, marlin_server.position_machine, marlin_server.position_planned);
+    media_print_pause();
+    print_job_timer.pause();
+    marlin_server.resume_nozzle_temp = marlin_server.vars.target_nozzle; //save nozzle target temp
+    marlin_server.resume_fan_speed = marlin_server.vars.fan_speed;       //save fan speed
+#if FAN_COUNT > 0
+    thermalManager.set_fan_speed(0, 0); //disable print fan
+#endif
 
-        marlin_server.print_state = mpsCrashRecovery_Begin;
-    }
+    marlin_server.print_state = mpsCrashRecovery_Begin;
 }
 
 void marlin_server_homing_start(AxisEnum axis, const bool positive_dir) {
@@ -682,20 +686,23 @@ static void _server_print_loop(void) {
         break;
 
     case mpsCrashRecovery_Begin:
-        media_print_pause();
-        print_job_timer.pause();
-        marlin_server.resume_nozzle_temp = marlin_server.vars.target_nozzle; //save nozzle target temp
-        marlin_server.resume_fan_speed = marlin_server.vars.fan_speed;       //save fan speed
-#if FAN_COUNT > 0
-        thermalManager.set_fan_speed(0, 0); //disable print fan
-#endif
-        marlin_server_park_crashed_head();
+        // marlin_server_park_crashed_head();
+        // marlin_server.resume_pos[0] = current_position.x;
+        // marlin_server.resume_pos[1] = current_position.y;
+        // marlin_server.resume_pos[2] = current_position.z;
+        // marlin_server.resume_pos[3] = current_position.e;
+        // current_position.e -= PAUSE_PARK_RETRACT_LENGTH;
+        // line_to_current_position(PAUSE_PARK_RETRACT_FEEDRATE);
+        // const xyz_pos_t park = NOZZLE_PARK_POINT;
+        // current_position.z = _MIN(current_position.z + park.z, Z_MAX_POS);
+        // line_to_current_position(NOZZLE_PARK_Z_FEEDRATE);
         marlin_server.print_state = mpsCrashRecovery_Lifting;
         break;
     case mpsCrashRecovery_Lifting:
         if ((planner.movesplanned() == 0) && (queue.length == 0)) {
-            marlin_server_homing_start(X_AXIS, true);
-            marlin_server.print_state = mpsCrashRecovery_X_HOME;
+            // marlin_server_homing_start(X_AXIS, true);
+            // marlin_server.print_state = mpsCrashRecovery_X_HOME;
+            marlin_server.print_state = mpsCrashRecovery_Pausing;
         }
         break;
     case mpsCrashRecovery_X_HOME:
