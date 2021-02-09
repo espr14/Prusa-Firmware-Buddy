@@ -548,22 +548,11 @@ void marlin_server_homing_finish_axis(AxisEnum axis) {
 }
 
 bool axes_length_ok() {
-    return 182 <= marlin_server.axis_length[0]
-        && marlin_server.axis_length[0] <= 190
-        && 182 <= marlin_server.axis_length[1]
-        && marlin_server.axis_length[1] <= 190;
-}
-
-void marlin_server_park_crashed_head() {
-    marlin_server.resume_pos[0] = current_position.x;
-    marlin_server.resume_pos[1] = current_position.y;
-    marlin_server.resume_pos[2] = current_position.z;
-    marlin_server.resume_pos[3] = current_position.e;
-    current_position.e -= PAUSE_PARK_RETRACT_LENGTH;
-    line_to_current_position(PAUSE_PARK_RETRACT_FEEDRATE);
-    const xyz_pos_t park = NOZZLE_PARK_POINT;
-    current_position.z = _MIN(current_position.z + park.z, Z_MAX_POS);
-    line_to_current_position(NOZZLE_PARK_Z_FEEDRATE);
+    return true;
+    // return 182 <= marlin_server.axis_length[0]
+    //     && marlin_server.axis_length[0] <= 190
+    //     && 182 <= marlin_server.axis_length[1]
+    //     && marlin_server.axis_length[1] <= 190;
 }
 
 static void _server_print_loop(void) {
@@ -693,24 +682,13 @@ static void _server_print_loop(void) {
         break;
 
     case mpsCrashRecovery_Begin:
-        // marlin_server_park_crashed_head();
-        // marlin_server.resume_pos[0] = current_position.x;
-        // marlin_server.resume_pos[1] = current_position.y;
-        // marlin_server.resume_pos[2] = current_position.z;
-        // marlin_server.resume_pos[3] = current_position.e;
-        // current_position.e -= PAUSE_PARK_RETRACT_LENGTH;
-        // line_to_current_position(PAUSE_PARK_RETRACT_FEEDRATE);
-        // const xyz_pos_t park = NOZZLE_PARK_POINT;
-        // current_position.z = _MIN(current_position.z + park.z, Z_MAX_POS);
-        // line_to_current_position(NOZZLE_PARK_Z_FEEDRATE);
-
-        // marlin_server.print_state = mpsCrashRecovery_Lifting;
+        marlin_server_park_head(true);
+        marlin_server.print_state = mpsCrashRecovery_Lifting;
         break;
     case mpsCrashRecovery_Lifting:
         if ((planner.movesplanned() == 0) && (queue.length == 0)) {
-            // marlin_server_homing_start(X_AXIS, true);
-            // marlin_server.print_state = mpsCrashRecovery_X_HOME;
-            marlin_server.print_state = mpsCrashRecovery_Pausing;
+            marlin_server_homing_start(X_AXIS, true);
+            marlin_server.print_state = mpsCrashRecovery_X_HOME;
         }
         break;
     case mpsCrashRecovery_X_HOME:

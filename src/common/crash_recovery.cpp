@@ -113,7 +113,7 @@ void position_restore(abce_pos_t &machine, xyze_pos_t &planned) {
 /// Disable stepper ISR before calling
 void crash_quick_stop(uint8_t *buffer_pointers, block_t *buffer, abce_pos_t &machine, xyze_pos_t &planned) {
 
-    /// save pointers
+    /// save buffer pointers
     buffer_pointers[0] = Planner::block_buffer_head;
     buffer_pointers[1] = Planner::block_buffer_nonbusy;
     buffer_pointers[2] = Planner::block_buffer_planned;
@@ -133,9 +133,6 @@ void crash_quick_stop(uint8_t *buffer_pointers, block_t *buffer, abce_pos_t &mac
     // Clear the accumulated runtime
     clear_block_buffer_runtime();
 #endif
-
-    // Make sure to drop any attempt of queuing moves for at least 1 second
-    Planner::cleaning_buffer_counter = 1000;
 
     // And stop the stepper ISR
     stepper.quick_stop();
