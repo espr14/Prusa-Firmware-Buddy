@@ -109,11 +109,9 @@ void position_restore(abce_pos_t &machine, xyze_pos_t &planned) {
         current_position.pos[axis] = planned[axis];
 }
 
-/// like Planner::quick_stop but saves buffer for later restore
+/// Like Planner::quick_stop but saves buffer for later restore
+/// Disable stepper ISR before calling
 void crash_quick_stop(uint8_t *buffer_pointers, block_t *buffer, abce_pos_t &machine, xyze_pos_t &planned) {
-    const bool was_enabled = STEPPER_ISR_ENABLED();
-    if (was_enabled)
-        DISABLE_STEPPER_DRIVER_INTERRUPT();
 
     /// save pointers
     buffer_pointers[0] = Planner::block_buffer_head;
@@ -137,11 +135,7 @@ void crash_quick_stop(uint8_t *buffer_pointers, block_t *buffer, abce_pos_t &mac
 #endif
 
     // Make sure to drop any attempt of queuing moves for at least 1 second
-    Planner::cleaning_buffer_counter = 5000;
-
-    // Reenable Stepper ISR
-    if (was_enabled)
-        ENABLE_STEPPER_DRIVER_INTERRUPT();
+    Planner::cleaning_buffer_counter = 1000;
 
     // And stop the stepper ISR
     stepper.quick_stop();

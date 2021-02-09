@@ -453,6 +453,16 @@ void marlin_server_print_pause(void) {
     }
 }
 
+void pause_print() {
+    media_print_pause();
+    print_job_timer.pause();
+    marlin_server.resume_nozzle_temp = marlin_server.vars.target_nozzle; //save nozzle target temp
+    marlin_server.resume_fan_speed = marlin_server.vars.fan_speed;       //save fan speed
+#if FAN_COUNT > 0
+    thermalManager.set_fan_speed(0, 0); //disable print fan
+#endif
+}
+
 void marlin_server_print_resume(void) {
     if (marlin_server.print_state == mpsPaused) {
         marlin_server.print_state = mpsResuming_Begin;
@@ -477,14 +487,17 @@ void marlin_server_print_crash(void) {
     if (marlin_server.print_state != mpsPrinting)
         return;
 
+    /// mask interrupt
+    /// otherwise stepper driver influences planner
+    if (STEPPER_ISR_ENABLED())
+        DISABLE_STEPPER_DRIVER_INTERRUPT();
+
     crash_quick_stop(marlin_server.buffer_pointers, marlin_server.buffer, marlin_server.position_machine, marlin_server.position_planned);
-    media_print_pause();
-    print_job_timer.pause();
-    marlin_server.resume_nozzle_temp = marlin_server.vars.target_nozzle; //save nozzle target temp
-    marlin_server.resume_fan_speed = marlin_server.vars.fan_speed;       //save fan speed
-#if FAN_COUNT > 0
-    thermalManager.set_fan_speed(0, 0); //disable print fan
-#endif
+    pause_print();
+
+    // Reenable Stepper ISR
+    if (STEPPER_ISR_ENABLED())
+        ENABLE_STEPPER_DRIVER_INTERRUPT();
 
     marlin_server.print_state = mpsCrashRecovery_Begin;
 }
@@ -570,13 +583,7 @@ static void _server_print_loop(void) {
         }
         break;
     case mpsPausing_Begin:
-        media_print_pause();
-        print_job_timer.pause();
-        marlin_server.resume_nozzle_temp = marlin_server.vars.target_nozzle; //save nozzle target temp
-        marlin_server.resume_fan_speed = marlin_server.vars.fan_speed;       //save fan speed
-#if FAN_COUNT > 0
-        thermalManager.set_fan_speed(0, 0); //disable print fan
-#endif
+        pause_print();
         marlin_server.print_state = mpsPausing_WaitIdle;
         break;
     case mpsPausing_WaitIdle:
@@ -696,7 +703,8 @@ static void _server_print_loop(void) {
         // const xyz_pos_t park = NOZZLE_PARK_POINT;
         // current_position.z = _MIN(current_position.z + park.z, Z_MAX_POS);
         // line_to_current_position(NOZZLE_PARK_Z_FEEDRATE);
-        marlin_server.print_state = mpsCrashRecovery_Lifting;
+
+        // marlin_server.print_state = mpsCrashRecovery_Lifting;
         break;
     case mpsCrashRecovery_Lifting:
         if ((planner.movesplanned() == 0) && (queue.length == 0)) {
