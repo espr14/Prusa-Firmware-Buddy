@@ -8,16 +8,16 @@
 #include "../Marlin/src/module/endstops.h"
 #include "../../Marlin/src/module/stepper.h"
 
-void print_axis_position(const AxisEnum axis) {
+void print_axis_position(const AxisEnum axis, Rect16 rect) {
     char text[10];
     snprintf(text, 10, "%f", (double)planner.get_axis_position_mm(axis));
-    display::DrawText(Rect16(0, 0, 100, 15), string_view_utf8::MakeRAM((const uint8_t *)text), GuiDefaults::Font, COLOR_BLACK, COLOR_WHITE);
+    display::DrawText(rect, string_view_utf8::MakeRAM((const uint8_t *)text), GuiDefaults::Font, COLOR_BLACK, COLOR_WHITE);
 }
 
-void print_current_position(const AxisEnum axis) {
+void print_current_position(const AxisEnum axis, Rect16 rect) {
     char text[10];
     snprintf(text, 10, "%f", (double)current_position.pos[axis]);
-    display::DrawText(Rect16(0, 20, 100, 15), string_view_utf8::MakeRAM((const uint8_t *)text), GuiDefaults::Font, COLOR_BLACK, COLOR_WHITE);
+    display::DrawText(rect, string_view_utf8::MakeRAM((const uint8_t *)text), GuiDefaults::Font, COLOR_BLACK, COLOR_WHITE);
 }
 
 // void print_stepper_position(const AxisEnum axis) {
@@ -33,8 +33,11 @@ void print_offset(const AxisEnum axis) {
 }
 
 void print_all(const AxisEnum axis) {
-    print_axis_position(axis);
-    print_current_position(axis);
+    print_axis_position(X_AXIS, Rect16(0, 0, 100, 15));
+    print_current_position(X_AXIS, Rect16(0, 20, 100, 15));
+
+    print_axis_position(Y_AXIS, Rect16(120, 0, 100, 15));
+    print_current_position(Y_AXIS, Rect16(120, 20, 100, 15));
     // print_stepper_position(axis);
     // print_offset(axis);
 }
