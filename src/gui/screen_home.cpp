@@ -45,7 +45,7 @@ screen_home_data_t::screen_home_data_t()
     , usbInserted(marlin_vars()->media_inserted)
     , header(this)
     , footer(this)
-    , logo(this, Rect16(41, 31, 158, 40), IDR_PNG_prusa_printer_logo)
+    , logo(this, Rect16(41, 31, 158, 40), IDR_NULL)
     , w_buttons { { this, Rect16(), 0, []() { Screens::Access()->Open(ScreenFactory::Screen<screen_filebrowser_data_t>); } },
         { this, Rect16(), 0, []() { Screens::Access()->Open(GetScreenMenuPreheat); } },
         { this, Rect16(), 0, []() { Screens::Access()->Open(GetScreenMenuFilament); } },
