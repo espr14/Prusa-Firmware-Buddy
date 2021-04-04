@@ -569,18 +569,18 @@
   #endif
 
   // Print surface diameter/2 minus unreachable space (avoid collisions with vertical towers).
-  #define DELTA_PRINTABLE_RADIUS 50.0     // (mm)
+  #define DELTA_PRINTABLE_RADIUS 50     // (mm)
 
   // Center-to-center distance of the holes in the diagonal push rods.
-  #define DELTA_DIAGONAL_ROD 220.0        // (mm)
+  #define DELTA_DIAGONAL_ROD 220        // (mm)
 
   // Distance between bed and nozzle Z home position
-  #define DELTA_HEIGHT 100.00             // (mm) Get this value from G33 auto calibrate
+  #define DELTA_HEIGHT 100             // (mm) Get this value from G33 auto calibrate
 
   #define DELTA_ENDSTOP_ADJ { 0.0, 0.0, 0.0 } // Get these values from G33 auto calibrate
 
   // Horizontal distance bridged by diagonal push rods when effector is centered.
-  #define DELTA_RADIUS 105.2              // (mm) Get this value from G33 auto calibrate
+  #define DELTA_RADIUS 105              // (mm) Get this value from G33 auto calibrate
 
   // Trim adjustments for individual towers
   // tower angle corrections for X and Y tower / rotate XYZ so Z tower angle = 0
@@ -719,19 +719,7 @@
  *                                      X, Y, Z, E0 [, E1[, E2[, E3[, E4[, E5]]]]]
  */
 
-//#define DEFAULT_AXIS_STEPS_PER_UNIT   { 100, 100, 400, 280 } //E0 280 295
-//#define DEFAULT_AXIS_STEPS_PER_UNIT     { 100, 100, 400, 325 } //E0 280 295
-//#define DEFAULT_AXIS_STEPS_PER_UNIT   { 800, 800, 3200, 1120 } //E0 280 295
-//#define DEFAULT_AXIS_STEPS_PER_UNIT   { 100, 100, 400, 1120 } //E0 280 295
-
-// variables to calculate steps
-#define XYZ_FULL_STEPS_PER_ROTATION 200
-#define XYZ_MICROSTEPS 16
-#define XYZ_BELT_PITCH 2
-#define XYZ_PULLEY_TEETH 16
-
-#define DEFAULT_XYZ_STEPS_PER_UNIT ((XYZ_FULL_STEPS_PER_ROTATION) * (XYZ_MICROSTEPS) / double(XYZ_BELT_PITCH) / double(XYZ_PULLEY_TEETH))
-#define DEFAULT_AXIS_STEPS_PER_UNIT   { DEFAULT_XYZ_STEPS_PER_UNIT, DEFAULT_XYZ_STEPS_PER_UNIT, DEFAULT_XYZ_STEPS_PER_UNIT, 325 }  // default steps per unit for Kossel (GT2, 20 tooth)
+#define DEFAULT_AXIS_STEPS_PER_UNIT { 100, 100, 100, 325 }
 
 /**
  * Default Max Feed Rate (mm/s)
