@@ -575,17 +575,17 @@
   #define DELTA_DIAGONAL_ROD 220        // (mm)
 
   // Distance between bed and nozzle Z home position
-  #define DELTA_HEIGHT 125.46             // (mm) Get this value from G33 auto calibrate
+  #define DELTA_HEIGHT 125.71             // (mm) Get this value from G33 auto calibrate
 
-  #define DELTA_ENDSTOP_ADJ { 0.0, -3.43, 2.96 } // Get these values from G33 auto calibrate
+  #define DELTA_ENDSTOP_ADJ { 0.0, -2.93, -2.63 } // Get these values from G33 auto calibrate
 
   // Horizontal distance bridged by diagonal push rods when effector is centered.
-  #define DELTA_RADIUS 94.75              // (mm) Get this value from G33 auto calibrate
+  #define DELTA_RADIUS 94.23              // (mm) Get this value from G33 auto calibrate
 
   // Trim adjustments for individual towers
   // tower angle corrections for X and Y tower / rotate XYZ so Z tower angle = 0
   // measured in degrees anticlockwise looking from above the printer
-  #define DELTA_TOWER_ANGLE_TRIM { 0.87, -0.04, 0.82 } // Get these values from G33 auto calibrate
+  #define DELTA_TOWER_ANGLE_TRIM { 0.96, -0.09, -0.87 } // Get these values from G33 auto calibrate
 
   // Delta radius and diagonal rod adjustments (mm)
   //#define DELTA_RADIUS_TRIM_TOWER { 0.0, 0.0, 0.0 }
@@ -929,8 +929,8 @@
  *     But: `M851 Z+1` with a CLEARANCE of 2  =>  2mm from bed to nozzle.
  */
 #define Z_CLEARANCE_DEPLOY_PROBE 0 // Z Clearance for Deploy/Stow
-#define Z_CLEARANCE_BETWEEN_PROBES 1 // Z Clearance between probe points
-#define Z_CLEARANCE_MULTI_PROBE 0.5 // Z Clearance between multiple probes
+#define Z_CLEARANCE_BETWEEN_PROBES 2 // Z Clearance between probe points
+#define Z_CLEARANCE_MULTI_PROBE 2 // Z Clearance between multiple probes
 #define Z_AFTER_PROBING 2 // Z position after probing is done
 
 #define Z_PROBE_LOW_POINT -2 // Farthest distance below the trigger-point to go before stopping
@@ -1128,7 +1128,7 @@
  */
 //#define AUTO_BED_LEVELING_3POINT
 //#define AUTO_BED_LEVELING_LINEAR
-#define AUTO_BED_LEVELING_BILINEAR
+//#define AUTO_BED_LEVELING_BILINEAR
 //#define AUTO_BED_LEVELING_UBL
 //#define MESH_BED_LEVELING
 
