@@ -552,7 +552,7 @@
   //#define DELTA_CALIBRATION_MENU
 
   // uncomment to add G33 Delta Auto-Calibration (Enable EEPROM_SETTINGS to store results)
-  //#define DELTA_AUTO_CALIBRATION
+  #define DELTA_AUTO_CALIBRATION
 
   // NOTE NB all values for DELTA_* values MUST be floating point, so always have a decimal point in them
 
@@ -563,7 +563,7 @@
 
   #if EITHER(DELTA_AUTO_CALIBRATION, DELTA_CALIBRATION_MENU)
     // Set the radius for the calibration probe points - max DELTA_PRINTABLE_RADIUS for non-eccentric probes
-    #define DELTA_CALIBRATION_RADIUS 78.0 // (mm)
+    #define DELTA_CALIBRATION_RADIUS 50 // (mm)
     // Set the steprate for papertest probing
     #define PROBE_MANUALLY_STEP 0.05      // (mm)
   #endif
