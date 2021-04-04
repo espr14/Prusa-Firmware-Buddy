@@ -563,7 +563,8 @@
 
   #if EITHER(DELTA_AUTO_CALIBRATION, DELTA_CALIBRATION_MENU)
     // Set the radius for the calibration probe points - max DELTA_PRINTABLE_RADIUS for non-eccentric probes
-    #define DELTA_CALIBRATION_RADIUS 50 // (mm)
+    // Make it smaller than DELTA_PRINTABLE_RADIUS or some points can be unreachable (rounding error)
+    #define DELTA_CALIBRATION_RADIUS 49 // (mm)
     // Set the steprate for papertest probing
     #define PROBE_MANUALLY_STEP 0.05      // (mm)
   #endif
@@ -575,17 +576,17 @@
   #define DELTA_DIAGONAL_ROD 220        // (mm)
 
   // Distance between bed and nozzle Z home position
-  #define DELTA_HEIGHT 125.71             // (mm) Get this value from G33 auto calibrate
+  #define DELTA_HEIGHT 126.44             // (mm) Get this value from G33 auto calibrate
 
-  #define DELTA_ENDSTOP_ADJ { 0.0, -2.93, -2.63 } // Get these values from G33 auto calibrate
+  #define DELTA_ENDSTOP_ADJ { 0.0, -1.65, -2.04 } // Get these values from G33 auto calibrate
 
   // Horizontal distance bridged by diagonal push rods when effector is centered.
-  #define DELTA_RADIUS 94.23              // (mm) Get this value from G33 auto calibrate
+  #define DELTA_RADIUS 96.81              // (mm) Get this value from G33 auto calibrate
 
   // Trim adjustments for individual towers
   // tower angle corrections for X and Y tower / rotate XYZ so Z tower angle = 0
   // measured in degrees anticlockwise looking from above the printer
-  #define DELTA_TOWER_ANGLE_TRIM { 0.96, -0.09, -0.87 } // Get these values from G33 auto calibrate
+  #define DELTA_TOWER_ANGLE_TRIM { 0.72, 0.29, -1.01 } // Get these values from G33 auto calibrate
 
   // Delta radius and diagonal rod adjustments (mm)
   //#define DELTA_RADIUS_TRIM_TOWER { 0.0, 0.0, 0.0 }
