@@ -1,3 +1,5 @@
+// menu_vars.cpp
+
 #include "menu_vars.h"
 #include "config.h"
 #include "int_to_cstr.h"
@@ -88,9 +90,9 @@ constexpr const char Z_home_gcode[] = {
     nth_char(Z_home, 8)
 };
 
-const std::array<std::array<int16_t, MenuVars::RANGE_SZ>, MenuVars::AXIS_CNT> MenuVars::axis_ranges = { { { X_MIN_POS, X_MAX_POS, 1 },
-    { Y_MIN_POS, Y_MAX_POS, 1 },
-    { Z_MIN_POS, Z_MAX_POS, 1 },
+const std::array<std::array<int16_t, MenuVars::RANGE_SZ>, MenuVars::AXIS_CNT> MenuVars::axis_ranges = { { { (int)(X_MIN_POS + 0.999f), (int)X_MAX_POS, 1 },
+    { (int)(Y_MIN_POS + 0.999), (int)Y_MAX_POS, 1 },
+    { Z_MIN_POS, (int)Z_MAX_POS, 1 },
     { -EXTRUDE_MAXLENGTH, EXTRUDE_MAXLENGTH, 1 } } };
 const int16_t MenuVars::manual_feedrate[AXIS_CNT] = MANUAL_FEEDRATE;
 const char MenuVars::axis_letters[AXIS_CNT] = { 'X', 'Y', 'Z', 'E' };
