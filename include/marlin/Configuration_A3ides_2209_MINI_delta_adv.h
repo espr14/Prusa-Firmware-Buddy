@@ -1112,7 +1112,7 @@
 #endif
 
 // Moves (or segments) with fewer steps than this will be joined with the next move
-#define MIN_STEPS_PER_SEGMENT 6
+#define MIN_STEPS_PER_SEGMENT 1
 
 /**
  * Minimum delay after setting the stepper DIR (in ns)
@@ -1488,7 +1488,7 @@
 
     #if AXIS_IS_TMC(X)
         #define X_CURRENT 350 // (mA) RMS current. Multiply by 1.414 for peak current.
-        #define X_MICROSTEPS 32 // 0..256
+        #define X_MICROSTEPS 16 // 0..256
         #define X_RSENSE 0.22
     #endif
 
@@ -1500,7 +1500,7 @@
 
     #if AXIS_IS_TMC(Y)
         #define Y_CURRENT 350
-        #define Y_MICROSTEPS 32
+        #define Y_MICROSTEPS 16
         #define Y_RSENSE 0.22
     #endif
 
@@ -1512,7 +1512,7 @@
 
     #if AXIS_IS_TMC(Z)
         #define Z_CURRENT 350 //530//650
-        #define Z_MICROSTEPS 32
+        #define Z_MICROSTEPS 16
         #define Z_RSENSE 0.22
     #endif
 
