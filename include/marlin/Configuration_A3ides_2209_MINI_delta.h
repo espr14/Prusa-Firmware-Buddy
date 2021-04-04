@@ -575,17 +575,17 @@
   #define DELTA_DIAGONAL_ROD 220        // (mm)
 
   // Distance between bed and nozzle Z home position
-  #define DELTA_HEIGHT 100             // (mm) Get this value from G33 auto calibrate
+  #define DELTA_HEIGHT 125.46             // (mm) Get this value from G33 auto calibrate
 
-  #define DELTA_ENDSTOP_ADJ { 0.0, 0.0, 0.0 } // Get these values from G33 auto calibrate
+  #define DELTA_ENDSTOP_ADJ { 0.0, -3.43, 2.96 } // Get these values from G33 auto calibrate
 
   // Horizontal distance bridged by diagonal push rods when effector is centered.
-  #define DELTA_RADIUS 105              // (mm) Get this value from G33 auto calibrate
+  #define DELTA_RADIUS 94.75              // (mm) Get this value from G33 auto calibrate
 
   // Trim adjustments for individual towers
   // tower angle corrections for X and Y tower / rotate XYZ so Z tower angle = 0
   // measured in degrees anticlockwise looking from above the printer
-  #define DELTA_TOWER_ANGLE_TRIM { 0.0, 0.0, 0.0 } // Get these values from G33 auto calibrate
+  #define DELTA_TOWER_ANGLE_TRIM { 0.87, -0.04, 0.82 } // Get these values from G33 auto calibrate
 
   // Delta radius and diagonal rod adjustments (mm)
   //#define DELTA_RADIUS_TRIM_TOWER { 0.0, 0.0, 0.0 }
@@ -719,7 +719,7 @@
  *                                      X, Y, Z, E0 [, E1[, E2[, E3[, E4[, E5]]]]]
  */
 
-#define DEFAULT_AXIS_STEPS_PER_UNIT { 100, 100, 100, 325 }
+#define DEFAULT_AXIS_STEPS_PER_UNIT { 200, 200, 200, 325 }
 
 /**
  * Default Max Feed Rate (mm/s)
@@ -767,7 +767,7 @@
 #if ENABLED(CLASSIC_JERK)
     #define DEFAULT_XJERK 8.0
     #define DEFAULT_YJERK 8.0
-    #define DEFAULT_ZJERK 2.0
+    #define DEFAULT_ZJERK 8.0
 #endif
 
 #define DEFAULT_EJERK 10 // May be used by Linear Advance
