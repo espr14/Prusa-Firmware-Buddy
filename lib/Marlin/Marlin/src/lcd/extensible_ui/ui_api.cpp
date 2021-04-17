@@ -41,6 +41,8 @@
  *   location: <http://www.gnu.org/licenses/>.                              *
  ****************************************************************************/
 
+// clang-format off
+
 #include "../../inc/MarlinConfigPre.h"
 
 #if ENABLED(EXTENSIBLE_UI)
@@ -372,7 +374,7 @@ namespace ExtUI {
     // Delta limits XY based on the current offset from center
     // This assumes the center is 0,0
     #if ENABLED(DELTA)
-      if (axis != Z_AXIS) {
+      if (AxisEnum(axis) != Z_AXIS) {
         max = SQRT(sq((float)(DELTA_PRINTABLE_RADIUS)) - sq(current_position[Y_AXIS - axis])); // (Y_AXIS - axis) == the other axis
         min = -max;
       }
