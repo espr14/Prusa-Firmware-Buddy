@@ -408,6 +408,23 @@ public:
     virtual void OnChange(size_t old_index) override;
 };
 
+class MI_FILAMENT_SENSOR : public WI_SWITCH_OFF_ON_t {
+    constexpr static const char *const label = N_("Filament Sensor");
+    static bool fs_not_connected;
+    static bool consumeNotConnected();
+    void no_sensor_msg() const;
+
+    bool init_index() const;
+
+public:
+    MI_FILAMENT_SENSOR()
+        : WI_SWITCH_OFF_ON_t(init_index(), _(label), 0, is_enabled_t::yes, is_hidden_t::no) {}
+    void CheckDisconnected();
+
+protected:
+    virtual void OnChange(size_t old_index) override;
+};
+
 class MI_FS_AUTOLOAD : public WI_SWITCH_OFF_ON_t {
     constexpr static const char *const label = N_("FS autoload");
 
