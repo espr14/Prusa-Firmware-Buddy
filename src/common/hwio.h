@@ -27,25 +27,8 @@ enum {
 extern "C" {
 #endif //__cplusplus
 
-//a3ides analog inputs
-enum {
-    ADC_HW_IDENTIFY,    //!< PA3 - chan 3
-    ADC_TEMP_BED,       //!< PA4 - chan 4
-    ADC_TEMP_2,         //!< PA5 - chan 5
-    ADC_TEMP_HEATBREAK, //!< PA6 - chan 6
-    ADC_TEMP_0,         //!< PC0 - chan 10
-    ONE_BEHIND_LAST_ADC,
-} typedef ADC_t;
-
 //--------------------------------------
 // low level I/O functions
-
-//analog inputs
-extern int hwio_adc_get_cnt(void);        //number of analog inputs
-extern int hwio_adc_get_max(int i_adc);   //analog input maximum value
-extern int hwio_adc_get_val(ADC_t i_adc); //read analog input
-extern void adc_ready(uint8_t index);
-extern uint8_t adc_seq2idx(uint8_t seq);
 
 //analog outputs
 extern int hwio_dac_get_cnt(void);                //number of analog outputs
@@ -74,8 +57,6 @@ extern int hwio_fan_get_cnt(void); //number of fans
 extern void hwio_fan_set_pwm(int i_fan, int val);
 
 //heaters
-extern int hwio_heater_get_cnt(void);                   //number of heaters
-extern void hwio_heater_set_pwm(int i_heater, int val); //pwm output maximum value
 
 //--------------------------------------
 // misc I/O functions

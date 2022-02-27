@@ -86,12 +86,32 @@
 
 /* USER CODE BEGIN Includes */
 /* Section where include file can be added */
-#define traceTASK_SWITCHED_IN()         \
-    extern void StartIdleMonitor(void); \
-    StartIdleMonitor()
+#define traceTASK_SWITCHED_IN()                            \
+    extern void StartIdleMonitor(void);                    \
+    StartIdleMonitor();                                    \
+                                                           \
+    if (prvGetTCBFromHandle(NULL) == xIdleTaskHandle) {    \
+        SEGGER_SYSVIEW_OnIdle();                           \
+    } else {                                               \
+        SEGGER_SYSVIEW_OnTaskStartExec((U32)pxCurrentTCB); \
+    }
+
 #define traceTASK_SWITCHED_OUT()      \
     extern void EndIdleMonitor(void); \
     EndIdleMonitor()
+
+#define traceTASK_CREATE(tcb)                              \
+    static int __task_counter = 0;                         \
+    (tcb)->uxTaskNumber = __task_counter++;                \
+    if (tcb != NULL) {                                     \
+        SEGGER_SYSVIEW_OnTaskCreate((U32)tcb);             \
+        SYSVIEW_AddTask((U32)tcb,                          \
+            &(tcb->pcTaskName[0]),                         \
+            tcb->uxPriority,                               \
+            (U32)tcb->pxStack,                             \
+            ((U32)tcb->pxTopOfStack - (U32)tcb->pxStack)); \
+    }
+
 /* USER CODE END Includes */
 
 /* Ensure stdint is only used by the compiler, and not the assembler. */
@@ -100,20 +120,26 @@
 extern uint32_t SystemCoreClock;
 #endif
 
-#define configUSE_PREEMPTION                    1
-#define configSUPPORT_STATIC_ALLOCATION         0
-#define configSUPPORT_DYNAMIC_ALLOCATION        1
-#define configUSE_IDLE_HOOK                     1
-#define configUSE_TICK_HOOK                     1
-#define configCPU_CLOCK_HZ                      (SystemCoreClock)
-#define configTICK_RATE_HZ                      ((TickType_t)1000)
-#define configMAX_PRIORITIES                    (7)
-#define configMINIMAL_STACK_SIZE                ((uint16_t)128)
-#define configTOTAL_HEAP_SIZE                   ((size_t)49152)
-#define configUSE_MALLOC_FAILED_HOOK            1
+#define configUSE_PREEMPTION             1
+#define configSUPPORT_STATIC_ALLOCATION  1
+#define configSUPPORT_DYNAMIC_ALLOCATION 1
+#define configUSE_IDLE_HOOK              1
+#define configUSE_TICK_HOOK              1
+#define configCPU_CLOCK_HZ               (SystemCoreClock)
+#define configTICK_RATE_HZ               ((TickType_t)1000)
+#define configMAX_PRIORITIES             (7)
+#define configMINIMAL_STACK_SIZE         ((uint16_t)128)
+#define configTOTAL_HEAP_SIZE            ((size_t)49152)
+#define configUSE_MALLOC_FAILED_HOOK     1
+
+#define configNUM_THREAD_LOCAL_STORAGE_POINTERS 2
+#define THREAD_LOCAL_STORAGE_SYSLOG_IDX         1
+#define THREAD_LOCAL_STORAGE_USB_LOGGING_IDX    2
+
 #define configMAX_TASK_NAME_LEN                 (16)
 #define configUSE_16_BIT_TICKS                  0
 #define configUSE_MUTEXES                       1
+#define configUSE_RECURSIVE_MUTEXES             1
 #define configQUEUE_REGISTRY_SIZE               8
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
 
@@ -182,10 +208,12 @@ standard names. */
 
 /* IMPORTANT: This define is commented when used with STM32Cube firmware, when timebase is systick,
               to prevent overwriting SysTick_Handler defined within STM32Cube HAL */
-#define xPortSysTickHandler SysTick_Handler
+//#define xPortSysTickHandler SysTick_Handler
 
 /* USER CODE BEGIN Defines */
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
 /* USER CODE END Defines */
+
+#include "SEGGER_SYSVIEW_FreeRTOS.h"
 
 #endif /* FREERTOS_CONFIG_H */

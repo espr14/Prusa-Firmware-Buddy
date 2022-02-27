@@ -25,6 +25,8 @@
  *             Most will migrate to classes, by feature.
  */
 
+// clang-format off
+
 #include "gcode.h"
 GcodeSuite gcode;
 
@@ -46,6 +48,8 @@ GcodeSuite gcode;
 #endif
 
 #include "../Marlin.h" // for idle() and suspend_auto_report
+
+#include "odometer.hpp"
 
 millis_t GcodeSuite::previous_move_ms;
 
@@ -121,6 +125,8 @@ void GcodeSuite::get_destination_from_command() {
     }
     else
       destination[i] = current_position[i];
+
+    Odometer_s::instance().add_value(i, destination[i] - current_position[i]);
   }
 
   #if ENABLED(POWER_LOSS_RECOVERY) && !PIN_EXISTS(POWER_LOSS)
@@ -148,7 +154,7 @@ void GcodeSuite::get_destination_from_command() {
  */
 void GcodeSuite::dwell(millis_t time) {
   time += millis();
-  while (PENDING(millis(), time)) idle();
+  while (PENDING(millis(), time)) idle(true);
 }
 
 /**

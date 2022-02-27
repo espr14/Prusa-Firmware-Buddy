@@ -15,7 +15,7 @@ static constexpr size_t SpinMessageQueueLength = 32;
 #if (configSUPPORT_STATIC_ALLOCATION == 1)
 
 void Jogwheel::InitButtonMessageQueueInstance_NotFromISR() {
-    constexpr size_t item_sz = sizeof(Jogwheel::BtnState_t);
+    constexpr size_t item_sz = sizeof(BtnState_t);
     constexpr size_t length = ButtonMessageQueueLength;
     static StaticQueue_t queue;
     static uint8_t storage_area[length * item_sz];
@@ -25,7 +25,7 @@ void Jogwheel::InitButtonMessageQueueInstance_NotFromISR() {
 #else // (configSUPPORT_STATIC_ALLOCATION == 1 )
 
 void Jogwheel::InitButtonMessageQueueInstance_NotFromISR() {
-    button_queue_handle = xQueueCreate(ButtonMessageQueueLength, sizeof(Jogwheel::BtnState_t));
+    button_queue_handle = xQueueCreate(ButtonMessageQueueLength, sizeof(BtnState_t));
 }
 
 #endif // (configSUPPORT_STATIC_ALLOCATION == 1 )
@@ -66,7 +66,6 @@ Jogwheel::Jogwheel()
     , btn_state(BtnState_t::Released)
     , jogwheel_signals(0)
     , jogwheel_signals_old(0)
-    , jogwheel_noise_filter(0)
     , encoder_gear(1)
     , type1(true)
     , spin_accelerator(false) {
@@ -76,8 +75,8 @@ int Jogwheel::GetJogwheelButtonPinState() {
     return static_cast<int>(jogWheelENC.read());
 }
 
-void Jogwheel::ReadInput(uint8_t &signals) {
-
+uint8_t Jogwheel::ReadHwInputsFromISR() {
+    uint8_t signals = 0;
     if (jogWheelENC.read() == Pin::State::high) {
         signals |= JG_BUTTON_PRESSED; //bit 2 - button press
     }
@@ -89,9 +88,10 @@ void Jogwheel::ReadInput(uint8_t &signals) {
     if (jogWheelEN2.read() == Pin::State::high) {
         signals |= JG_PHASE_1; //bit 1 - phase1
     }
+    return signals;
 }
 
-bool Jogwheel::ConsumeButtonEvent(Jogwheel::BtnState_t &ev) {
+bool Jogwheel::ConsumeButtonEvent(BtnState_t &ev) {
     // this can happen only once
     // queue is initialized in a rtos thread (outside interrupt) on first attempt to read
     if (button_queue_handle == nullptr) {
@@ -154,9 +154,29 @@ void Jogwheel::UpdateButtonActionFromISR() {
         break;
     case BtnState_t::Held:
         if (!IsBtnPressed()) {
+            ChangeStateFromISR(BtnState_t::HeldAndReleased);
+            // we want to set the state to released and send that the button was released after long hold
+        } else {
+            encoder_t temp_enc;
+            temp_enc.data = threadsafe_enc.data;
+            int32_t diff = CalculateEncoderDiff(temp_enc);
+            if (diff > 0) {
+                ChangeStateFromISR(BtnState_t::HeldAndLeft);
+            } else if (diff < 0) {
+                ChangeStateFromISR(BtnState_t::HeldAndRight);
+            }
+        }
+        break;
+    case BtnState_t::HeldAndLeft:
+    case BtnState_t::HeldAndRight:
+        if (!IsBtnPressed()) {
             ChangeStateFromISR(BtnState_t::Released);
         }
         break;
+    case BtnState_t::HeldAndReleased:
+        if (!IsBtnPressed()) {
+            ChangeStateFromISR(BtnState_t::Released);
+        }
     }
 }
 
@@ -176,16 +196,17 @@ void Jogwheel::Update1msFromISR() {
     //do nothing while queues are not initialized
     if (button_queue_handle == nullptr)
         return;
-    tick_counter++;
 
-    uint8_t signals = 0;
+    uint8_t signals = ReadHwInputsFromISR();
 
-    ReadInput(signals);
-
-    if (jogwheel_noise_filter != signals) {
-        jogwheel_noise_filter = signals; // noise detection
+    // initialization of static variable to inverted signals, so first value si filtered out
+    static uint8_t signals_filter = ~signals;
+    if (signals_filter != signals) {
+        signals_filter = signals; // noise detection
         return;
     }
+
+    tick_counter++;
 
     UpdateVariablesFromISR(signals);
 

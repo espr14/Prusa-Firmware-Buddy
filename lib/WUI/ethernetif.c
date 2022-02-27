@@ -70,7 +70,7 @@
 /* The time to block waiting for input. */
 #define TIME_WAITING_FOR_INPUT (portMAX_DELAY)
 /* Stack size of the interface thread */
-#define INTERFACE_THREAD_STACK_SIZE (350)
+#define INTERFACE_THREAD_STACK_SIZE (160)
 /* Network interface name */
 #define IFNAME0 'P'
 #define IFNAME1 'R'
@@ -157,7 +157,7 @@ void HAL_ETH_MspInit(ETH_HandleTypeDef *ethHandle) {
         HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
         /* Peripheral interrupt init */
-        HAL_NVIC_SetPriority(ETH_IRQn, 5, 0);
+        HAL_NVIC_SetPriority(ETH_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY, 0);
         HAL_NVIC_EnableIRQ(ETH_IRQn);
         /* USER CODE BEGIN ETH_MspInit 1 */
 
@@ -230,7 +230,6 @@ uint32_t ethernetif_link(const void *arg) {
  */
 static void low_level_init(struct netif *netif) {
     uint32_t regvalue = 0;
-    HAL_StatusTypeDef hal_eth_init_status;
 
     /* Init ETH */
 
@@ -247,12 +246,8 @@ static void low_level_init(struct netif *netif) {
 
     /* USER CODE END MACADDRESS */
 
-    hal_eth_init_status = HAL_ETH_Init(&heth);
+    HAL_ETH_Init(&heth);
 
-    if (hal_eth_init_status == HAL_OK) {
-        /* Set netif link flag */
-        netif->flags |= NETIF_FLAG_LINK_UP;
-    }
     /* Initialize Tx Descriptors list: Chain Mode */
     HAL_ETH_DMATxDescListInit(&heth, DMATxDscrTab, &Tx_Buff[0][0], ETH_TXBUFNB);
 
@@ -288,7 +283,7 @@ static void low_level_init(struct netif *netif) {
     s_xSemaphore = osSemaphoreCreate(osSemaphore(SEM), 1);
 
     /* create the task that handles the ETH_MAC */
-    osThreadDef(EthIf, ethernetif_input, osPriorityRealtime, 0, INTERFACE_THREAD_STACK_SIZE);
+    osThreadDef(EthIf, ethernetif_input, osPriorityBelowNormal, 0, INTERFACE_THREAD_STACK_SIZE);
     osThreadCreate(osThread(EthIf), netif);
     /* Enable MAC and DMA transmission and reception */
     HAL_ETH_Start(&heth);
@@ -676,8 +671,7 @@ void ethernetif_update_config(struct netif *netif) {
         HAL_ETH_Start(&heth);
     } else {
         /* Stop MAC interface */
-        //TODO:After a few ETH_Stop, device don't want to start ?
-        // HAL_ETH_Stop(&heth);
+        HAL_ETH_Stop(&heth);
     }
 
     ethernetif_notify_conn_changed(netif);

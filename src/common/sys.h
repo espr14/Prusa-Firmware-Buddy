@@ -13,9 +13,13 @@ extern "C" {
 
 extern volatile data_exchange_t ram_data_exchange;
 
-extern void sys_reset(void);
+extern void sys_reset(void) __attribute__((noreturn));
 
-extern void sys_dfu_boot(void);
+extern void sys_dfu_request_and_reset(void) __attribute__((noreturn));
+
+extern bool sys_dfu_requested(void);
+
+extern void sys_dfu_boot_enter(void) __attribute__((noreturn));
 
 extern int sys_pll_is_enabled(void);
 
@@ -44,6 +48,8 @@ extern void sys_fw_update_disable(void);
 extern int sys_fw_update_on_restart_is_enabled(void);
 
 extern void sys_fw_update_on_restart_enable(void);
+
+extern void sys_fw_update_older_on_restart_enable(void);
 
 extern void sys_fw_update_on_restart_disable(void);
 

@@ -1,7 +1,7 @@
 #include "screen_sheet_rename.hpp"
 #include "ScreenHandler.hpp"
 #include "eeprom.h"
-#include "dbg.h"
+#include "log.h"
 
 static void onclick_ok();
 static void onclick_cancel();
@@ -11,7 +11,7 @@ void screen_sheet_rename_t::index(uint32_t index) {
     screen_sheet_rename_t::index_ = index;
 }
 screen_sheet_rename_t::screen_sheet_rename_t()
-    : window_frame_t()
+    : screen_t()
     , header(this)
     , footer(this)
     , button_ok(this, Rect16(10, 100, 80, 20), onclick_ok, _("OK"))
@@ -23,13 +23,13 @@ screen_sheet_rename_t::screen_sheet_rename_t()
     sheet_name(screen_sheet_rename_t::index_, name, MAX_SHEET_NAME_LENGTH);
     text_name.SetText(string_view_utf8::MakeCPUFLASH((uint8_t *)name));
     text_name.SetFocus();
-    _dbg("Rename : %s\n", name);
+    log_info(GUI, "Rename : %s\n", name);
 }
 
 void onclick_ok() {
     ///TODO: store count changed characters
     ///uint32_t cnt = sheet_rename(
-    _dbg("Rename Cnt: %d\n", sheet_rename(screen_sheet_rename_t::index_, "anything", 8));
+    log_info(GUI, "Rename Cnt: %d\n", sheet_rename(screen_sheet_rename_t::index_, "anything", 8));
     Screens::Access()->Close();
 }
 

@@ -483,8 +483,10 @@ void remember_feedrate_scaling_off() {
   feedrate_percentage = 100;
 }
 void restore_feedrate_and_scaling() {
-  feedrate_mm_s = saved_feedrate_mm_s;
-  feedrate_percentage = saved_feedrate_percentage;
+  if (feedrate_percentage == 100) {
+    feedrate_mm_s = saved_feedrate_mm_s;
+    feedrate_percentage = saved_feedrate_percentage;
+  }
 }
 
 #if HAS_SOFTWARE_ENDSTOPS
@@ -736,7 +738,7 @@ void restore_feedrate_and_scaling() {
       thermalManager.manage_heater();  // This returns immediately if not really needed.
       if (ELAPSED(millis(), next_idle_ms)) {
         next_idle_ms = millis() + 200UL;
-        idle();
+        idle(false);
       }
 
       raw += segment_distance;
@@ -814,7 +816,7 @@ void restore_feedrate_and_scaling() {
         thermalManager.manage_heater();  // This returns immediately if not really needed.
         if (ELAPSED(millis(), next_idle_ms)) {
           next_idle_ms = millis() + 200UL;
-          idle();
+          idle(false);
         }
         raw += segment_distance;
         if (!planner.buffer_line(raw, fr_mm_s, active_extruder, cartesian_segment_mm
@@ -1675,7 +1677,7 @@ void homeaxis(const AxisEnum axis) {
     // retrace by the amount specified in delta_endstop_adj + additional dist in order to have minimum steps
     if (delta_endstop_adj[axis] * Z_HOME_DIR <= 0) {
       if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("delta_endstop_adj:");
-      do_homing_move(axis, delta_endstop_adj[axis] - (MIN_STEPS_PER_SEGMENT + 1) * planner.steps_to_mm[axis] * Z_HOME_DIR);
+      do_homing_move(axis, delta_endstop_adj[axis] - (MIN_STEPS_PER_SEGMENT + 1) * planner.mm_per_step[axis] * Z_HOME_DIR);
     }
 
   #else // CARTESIAN / CORE

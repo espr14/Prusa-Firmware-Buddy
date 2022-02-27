@@ -1,8 +1,13 @@
+#include <fcntl.h>
+//#include <string.h>
+#include <unistd.h>
 #include "ScreenShot.hpp"
-#include "st7789v.h"
+#include "st7789v.hpp"
 #include "display.h"
 #include <inttypes.h>
-#include "ff.h"
+#include <dirent.h>
+#include <stdio.h>
+#include <unistd.h>
 
 enum {
     BMP_FILE_HEADER_SIZE = 14,
@@ -11,9 +16,10 @@ enum {
     ST7789V_BYTES_PER_PIXEL = 2, // R(5b) + G(6b) + B(5b) = 16b = 2B
     BMP_FILE_SIZE = BMP_FILE_HEADER_SIZE + BMP_INFO_HEADER_SIZE + display::GetW() * display::GetH() * ST7789V_BYTES_PER_PIXEL,
     SCREENSHOT_FILE_NAME_MAX_LEN = 30,
+    SCREENSHOT_FILE_NAME_BUFFER_LEN = SCREENSHOT_FILE_NAME_MAX_LEN + 1,
 };
 
-static const char screenshot_name[] = "/screenshot";
+static const char screenshot_name[] = "/usb/screenshot";
 static const char screenshot_format[] = ".bmp";
 
 static const unsigned char bmp_header[] = {
@@ -61,40 +67,27 @@ static void mirror_buffer(uint8_t *buffer) {
 }
 
 bool TakeAScreenshot() {
+    int fd;
+    char file_name[SCREENSHOT_FILE_NAME_BUFFER_LEN];
 
-    FIL screenshot_file;
-    char file_name[SCREENSHOT_FILE_NAME_MAX_LEN + 1];
-    bool init = false;
+    bool success;
 
-    bool success = true;
+    // TODO: add written bytes check if needed
 
-    UINT written_bytes = 0; // TODO: add written bytes check if needed
-
-    if (success) {
-        FILINFO file_info;
-        FRESULT res;
-        uint32_t inc = 1;
-        snprintf(file_name, SCREENSHOT_FILE_NAME_MAX_LEN + 1, "%s_%lu%s", screenshot_name, inc, screenshot_format);
-        while ((res = f_stat(file_name, &file_info)) != FR_NO_FILE) {
-            inc++;
-            snprintf(file_name, SCREENSHOT_FILE_NAME_MAX_LEN + 1, "%s_%lu%s", screenshot_name, inc, screenshot_format);
-            if (res == FR_NOT_ENABLED || inc == 0) {
-                success = false;
-                break;
-            }
-        }
+    uint32_t inc = 1;
+    snprintf(file_name, SCREENSHOT_FILE_NAME_BUFFER_LEN, "%s_%lu%s", screenshot_name, inc, screenshot_format);
+    while ((access(file_name, F_OK)) == 0) {
+        inc++;
+        snprintf(file_name, SCREENSHOT_FILE_NAME_BUFFER_LEN, "%s_%lu%s", screenshot_name, inc, screenshot_format);
     }
 
-    if (success) {
-        success = FR_OK == f_open(&screenshot_file, file_name, FA_WRITE | FA_CREATE_NEW | FA_OPEN_APPEND);
+    fd = open(file_name, O_WRONLY | O_APPEND | O_CREAT);
+    if (fd < 0) {
+        return false;
     }
 
-    if (success) {
-        init = true;
-        success = FR_OK == f_write(&screenshot_file, &bmp_header, BMP_FILE_HEADER_SIZE + BMP_INFO_HEADER_SIZE, &written_bytes);
-    }
-
-    UINT written = 0;
+    const int header_size = BMP_FILE_HEADER_SIZE + BMP_INFO_HEADER_SIZE;
+    success = write(fd, &bmp_header, header_size) == header_size;
 
     if (success) {
         for (uint8_t block = ST7789V_ROWS / ST7789V_BUFF_ROWS - 1; block >= 0 && block < ST7789V_ROWS / ST7789V_BUFF_ROWS; block--) {
@@ -106,7 +99,8 @@ bool TakeAScreenshot() {
                 break;
             } else {
                 mirror_buffer(buffer);
-                if (FR_OK != f_write(&screenshot_file, buffer, ST7789V_COLS * ST7789V_BUFF_ROWS * ST7789V_BYTES_PER_PIXEL, &written)) {
+                const int write_size = ST7789V_COLS * ST7789V_BUFF_ROWS * ST7789V_BYTES_PER_PIXEL;
+                if (write(fd, buffer, write_size) != write_size) {
                     success = false;
                     break;
                 }
@@ -114,16 +108,10 @@ bool TakeAScreenshot() {
         }
     }
 
-    if (init) {
-        if (success) {
-            success = FR_OK == f_close(&screenshot_file);
-        } else {
-            f_close(&screenshot_file);
-        }
-    }
+    close(fd);
 
-    if (init && !success) {
-        f_unlink(file_name);
+    if (!success) {
+        unlink(file_name);
         return false;
     }
 

@@ -20,7 +20,7 @@
  *
  */
 
-#include "../../../lib/Marlin/Marlin/src/inc/MarlinConfig.h"
+#include "config_features.h"
 
 // clang-format off
 #if (!ENABLED(ADVANCED_PAUSE_FEATURE)) || \
@@ -40,6 +40,7 @@
 #include "marlin_server.hpp"
 #include "pause_stubbed.hpp"
 #include <cmath>
+#include "filament_sensor.hpp"
 
 /**
  * M600: Pause for filament change
@@ -60,20 +61,6 @@ void GcodeSuite::M600() {
     const int8_t target_extruder = get_target_extruder_from_command();
     if (target_extruder < 0)
         return;
-
-    FSM_Holder D(ClientFSM::Load_unload, uint8_t(LoadUnloadMode::Change));
-#if ENABLED(HOME_BEFORE_FILAMENT_CHANGE)
-    // Don't allow filament change without homing first
-    if (axes_need_homing())
-        home_all_axes();
-#endif
-
-    // Initial retract before move to filament change position
-    const float retract = -std::abs(parser.seen('E') ? parser.value_axis_units(E_AXIS) : 0
-#ifdef PAUSE_PARK_RETRACT_LENGTH
-                + (PAUSE_PARK_RETRACT_LENGTH)
-#endif
-    );
 
     xyz_pos_t park_point =
 #ifdef NOZZLE_PARK_POINT_M600
@@ -96,19 +83,18 @@ void GcodeSuite::M600() {
     park_point += hotend_offset[active_extruder];
 #endif
 
-    // Unload filament
-    pause.SetUnloadLength(parser.seen('U') ? parser.value_axis_units(E_AXIS)
-                                           : pause.GetDefaultUnloadLength());
+    park_point.z += current_position.z;
+    static const xyze_float_t no_return = { NAN, NAN, NAN, current_position.e };
+    Pause &pause = Pause::Instance();
 
-    // Slow load filament
-    pause.SetSlowLoadLength(FILAMENT_CHANGE_SLOW_LOAD_LENGTH);
-
-    // Fast load filament
-    pause.SetFastLoadLength(parser.seen('L') ? parser.value_axis_units(E_AXIS)
-                                             : pause.GetDefaultLoadLength());
-
-    // Purge filament
-    pause.SetPurgeLength(ADVANCED_PAUSE_PURGE_LENGTH);
+    //NAN == default
+    pause.SetUnloadLength(parser.seen('U') ? parser.value_axis_units(E_AXIS) : NAN);
+    pause.SetSlowLoadLength(NAN);
+    pause.SetFastLoadLength(parser.seen('L') ? parser.value_axis_units(E_AXIS) : NAN);
+    pause.SetPurgeLength(NAN);
+    pause.SetParkPoint(park_point);
+    pause.SetResumePoint(parser.seen('N') ? no_return : current_position);
+    pause.SetRetractLength(std::abs(parser.seen('E') ? parser.value_axis_units(E_AXIS) : NAN)); // Initial retract before move to filament change position
 
     float disp_temp = marlin_server_get_temp_to_display();
     float targ_temp = Temperature::degTargetHotend(target_extruder);
@@ -117,9 +103,8 @@ void GcodeSuite::M600() {
         thermalManager.setTargetHotend(disp_temp, target_extruder);
     }
 
-    if (pause.PrintPause(retract, park_point)) {
-        pause.PrintResume();
-    }
+    pause.FilamentChange();
+    FS_instance().ClrM600Sent(); //reset filament sensor M600 sent flag
 
     if (disp_temp > targ_temp) {
         thermalManager.setTargetHotend(targ_temp, target_extruder);

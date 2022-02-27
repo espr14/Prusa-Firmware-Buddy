@@ -39,7 +39,11 @@ enum {
     VARIANT8_ERR_OOFRNG,     // out of range (during conversion from bigger to lower range number)
 };
 
+#if INTPTR_MAX == INT32_MAX // 32 bit system
 typedef uint64_t variant8_t;
+#elif INTPTR_MAX == INT64_MAX // 64 bit system
+typedef unsigned __int128 variant8_t;
+#endif
 
 #ifdef __cplusplus
 
@@ -103,6 +107,9 @@ extern variant8_t variant8_pui32(uint32_t *pui32, uint16_t count, int init);
 // returns VARIANT8_PFLT
 extern variant8_t variant8_pflt(float *pflt, uint16_t count, int init);
 
+// returns VARIANT8_ERROR
+extern variant8_t variant8_error(uint32_t err32, uint16_t err16, uint8_t err8);
+
 // returns variant8_t type
 extern uint8_t variant8_get_type(variant8_t v);
 // returns variant8_t usr8
@@ -123,10 +130,10 @@ extern uint32_t variant8_get_ui32(variant8_t v);
 extern int32_t variant8_get_i32(variant8_t v);
 
 // returns variant8_t ui16
-extern uint16_t variant_get_ui16(variant8_t v);
+extern uint16_t variant8_get_ui16(variant8_t v);
 
 // returns variant8_t ui8
-extern uint8_t variant_get_ui8(variant8_t v);
+extern uint8_t variant8_get_ui8(variant8_t v);
 
 // returns variant8_t i8
 extern int8_t variant8_get_i8(variant8_t v);
@@ -165,7 +172,7 @@ extern int variant8_snprintf(char *str, unsigned int size, const char *fmt, vari
 extern char *variant8_to_str(variant8_t *pvar8, const char *fmt);
 
 // returns variant8 with desired type parsed from string with sscanf
-extern variant8_t variant8_from_str(uint8_t type, char *str, const char *fmt);
+extern variant8_t variant8_from_str(uint8_t type, char *str);
 
 // variant8 realloc function
 extern void *variant8_realloc(void *ptr, uint16_t size);

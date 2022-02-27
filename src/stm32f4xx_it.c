@@ -39,10 +39,15 @@
 #include "cmsis_os.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "config.h"
 #include "bsod.h"
 #include "dump.h"
 #include "sys.h"
 #include "buffered_serial.hpp"
+#ifdef BUDDY_ENABLE_WUI
+    #include "espif.h"
+#endif
+#include "tusb.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -77,10 +82,11 @@
 
 /* External variables --------------------------------------------------------*/
 extern ETH_HandleTypeDef heth;
-extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern HCD_HandleTypeDef hhcd_USB_OTG_HS;
 extern DMA_HandleTypeDef hdma_spi2_tx;
 extern DMA_HandleTypeDef hdma_spi2_rx;
+extern DMA_HandleTypeDef hdma_spi3_tx;
+extern DMA_HandleTypeDef hdma_spi3_rx;
 extern TIM_HandleTypeDef htim14;
 extern DMA_HandleTypeDef hdma_usart1_rx;
 extern DMA_HandleTypeDef hdma_usart2_rx;
@@ -90,6 +96,8 @@ extern UART_HandleTypeDef huart6;
 extern uartrxbuff_t uart6rxbuff;
 extern TIM_HandleTypeDef htim6;
 extern WWDG_HandleTypeDef hwwdg;
+
+extern DMA_HandleTypeDef hdma_adc1;
 
 /* USER CODE BEGIN EV */
 
@@ -184,32 +192,60 @@ void DebugMon_Handler(void) {
 /******************************************************************************/
 
 void USART2_IRQHandler() {
+    traceISR_ENTER();
     if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_IDLE)) {
         __HAL_UART_CLEAR_IDLEFLAG(&huart2);
         uart2_idle_cb(&huart2);
     }
     HAL_UART_IRQHandler(&huart2);
+    traceISR_EXIT();
 }
+#ifdef USE_ESP01_WITH_UART6
+void USART6_IRQHandler(void) {
 
+    if (__HAL_UART_GET_FLAG(&huart6, UART_FLAG_IDLE)) {
+        __HAL_UART_CLEAR_IDLEFLAG(&huart6);
+    #ifdef BUDDY_ENABLE_WUI
+        espif_receive_data(&huart6);
+    #endif // BUDDY_ENABLE_WUI
+    }
+    HAL_UART_IRQHandler(&huart6);
+}
+#else  // USE_ESP01_WITH_UART6
 void USART6_IRQHandler() {
+    traceISR_ENTER();
     if (__HAL_UART_GET_FLAG(&huart6, UART_FLAG_IDLE)) {
         __HAL_UART_CLEAR_IDLEFLAG(&huart6);
         uartrxbuff_idle_cb(&uart6rxbuff);
     }
     HAL_UART_IRQHandler(&huart6);
+    traceISR_EXIT();
 }
-
+#endif // USE_ESP01_WITH_UART6
 /**
   * @brief This function handles Window watchdog interrupt.
   */
 void WWDG_IRQHandler(void) {
     /* USER CODE BEGIN WWDG_IRQn 0 */
-
+    traceISR_ENTER();
     /* USER CODE END WWDG_IRQn 0 */
     HAL_WWDG_IRQHandler(&hwwdg);
     /* USER CODE BEGIN WWDG_IRQn 1 */
-
+    traceISR_EXIT();
     /* USER CODE END WWDG_IRQn 1 */
+}
+
+/**
+ * @brief This function handles DMA1 stream0 global interrupt.
+ */
+void DMA1_Stream0_IRQHandler(void) {
+    /* USER CODE BEGIN DMA1_Stream3_IRQn 0 */
+    traceISR_ENTER();
+    /* USER CODE END DMA1_Stream3_IRQn 0 */
+    HAL_DMA_IRQHandler(&hdma_spi3_rx);
+    /* USER CODE BEGIN DMA1_Stream3_IRQn 1 */
+    traceISR_EXIT();
+    /* USER CODE END DMA1_Stream3_IRQn 1 */
 }
 
 /**
@@ -217,11 +253,11 @@ void WWDG_IRQHandler(void) {
  */
 void DMA1_Stream3_IRQHandler(void) {
     /* USER CODE BEGIN DMA1_Stream3_IRQn 0 */
-
+    traceISR_ENTER();
     /* USER CODE END DMA1_Stream3_IRQn 0 */
     HAL_DMA_IRQHandler(&hdma_spi2_rx);
     /* USER CODE BEGIN DMA1_Stream3_IRQn 1 */
-
+    traceISR_EXIT();
     /* USER CODE END DMA1_Stream3_IRQn 1 */
 }
 
@@ -230,11 +266,11 @@ void DMA1_Stream3_IRQHandler(void) {
   */
 void DMA1_Stream4_IRQHandler(void) {
     /* USER CODE BEGIN DMA1_Stream4_IRQn 0 */
-
+    traceISR_ENTER();
     /* USER CODE END DMA1_Stream4_IRQn 0 */
     HAL_DMA_IRQHandler(&hdma_spi2_tx);
     /* USER CODE BEGIN DMA1_Stream4_IRQn 1 */
-
+    traceISR_EXIT();
     /* USER CODE END DMA1_Stream4_IRQn 1 */
 }
 
@@ -243,39 +279,25 @@ void DMA1_Stream4_IRQHandler(void) {
   */
 void DMA1_Stream5_IRQHandler(void) {
     /* USER CODE BEGIN DMA1_Stream5_IRQn 0 */
-
+    traceISR_ENTER();
     /* USER CODE END DMA1_Stream5_IRQn 0 */
     HAL_DMA_IRQHandler(&hdma_usart2_rx);
     /* USER CODE BEGIN DMA1_Stream5_IRQn 1 */
-
+    traceISR_EXIT();
     /* USER CODE END DMA1_Stream5_IRQn 1 */
 }
 
 /**
-  * @brief This function handles EXTI line[9:5] interrupts.
-  */
-void EXTI9_5_IRQHandler(void) {
-    /* USER CODE BEGIN EXTI9_5_IRQn 0 */
-
-    /* USER CODE END EXTI9_5_IRQn 0 */
-    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
-    /* USER CODE BEGIN EXTI9_5_IRQn 1 */
-
-    /* USER CODE END EXTI9_5_IRQn 1 */
-}
-
-/**
-  * @brief This function handles EXTI line[15:10] interrupts.
-  */
-void EXTI15_10_IRQHandler(void) {
-    /* USER CODE BEGIN EXTI15_10_IRQn 0 */
-
-    /* USER CODE END EXTI15_10_IRQn 0 */
-    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_10);
-    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_14);
-    /* USER CODE BEGIN EXTI15_10_IRQn 1 */
-
-    /* USER CODE END EXTI15_10_IRQn 1 */
+ * @brief This function handles DMA1 stream7 global interrupt.
+ */
+void DMA1_Stream7_IRQHandler(void) {
+    /* USER CODE BEGIN DMA1_Stream3_IRQn 0 */
+    traceISR_ENTER();
+    /* USER CODE END DMA1_Stream7_IRQn 0 */
+    HAL_DMA_IRQHandler(&hdma_spi3_tx);
+    /* USER CODE BEGIN DMA1_Stream3_IRQn 1 */
+    traceISR_EXIT();
+    /* USER CODE END DMA1_Stream3_IRQn 1 */
 }
 
 /**
@@ -283,25 +305,12 @@ void EXTI15_10_IRQHandler(void) {
   */
 void TIM8_TRG_COM_TIM14_IRQHandler(void) {
     /* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 0 */
-
+    traceISR_ENTER();
     /* USER CODE END TIM8_TRG_COM_TIM14_IRQn 0 */
     HAL_TIM_IRQHandler(&htim14);
     /* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 1 */
-
+    traceISR_EXIT();
     /* USER CODE END TIM8_TRG_COM_TIM14_IRQn 1 */
-}
-
-/**
-  * @brief This function handles TIM6 global interrupt, DAC1 and DAC2 underrun error interrupts.
-  */
-void TIM6_DAC_IRQHandler(void) {
-    /* USER CODE BEGIN TIM6_DAC_IRQn 0 */
-
-    /* USER CODE END TIM6_DAC_IRQn 0 */
-    HAL_TIM_IRQHandler(&htim6);
-    /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
-
-    /* USER CODE END TIM6_DAC_IRQn 1 */
 }
 
 /**
@@ -309,25 +318,44 @@ void TIM6_DAC_IRQHandler(void) {
   */
 void DMA2_Stream1_IRQHandler(void) {
     /* USER CODE BEGIN DMA2_Stream1_IRQn 0 */
-
+    traceISR_ENTER();
+#ifdef BUDDY_ENABLE_WUI
+    if (__HAL_DMA_GET_IT_SOURCE(&hdma_usart6_rx, DMA_IT_HT) != RESET || __HAL_DMA_GET_IT_SOURCE(&hdma_usart6_rx, DMA_IT_TC) != RESET) {
+        espif_receive_data(&huart6);
+    }
+#endif
     /* USER CODE END DMA2_Stream1_IRQn 0 */
     HAL_DMA_IRQHandler(&hdma_usart6_rx);
     /* USER CODE BEGIN DMA2_Stream1_IRQn 1 */
-
+    traceISR_EXIT();
     /* USER CODE END DMA2_Stream1_IRQn 1 */
 }
 
+#ifndef USE_ESP01_WITH_UART6
 /**
   * @brief This function handles DMA2 stream2 global interrupt.
   */
 void DMA2_Stream2_IRQHandler(void) {
     /* USER CODE BEGIN DMA2_Stream2_IRQn 0 */
-
+    traceISR_ENTER();
     /* USER CODE END DMA2_Stream2_IRQn 0 */
     HAL_DMA_IRQHandler(&hdma_usart1_rx);
     /* USER CODE BEGIN DMA2_Stream2_IRQn 1 */
-
+    traceISR_EXIT();
     /* USER CODE END DMA2_Stream2_IRQn 1 */
+}
+#endif
+/**
+  * @brief This function handles DMA2 stream0 global interrupt.
+  */
+void DMA2_Stream0_IRQHandler(void) {
+    /* USER CODE BEGIN DMA2_Stream0_IRQn 0 */
+    //traceISR_ENTER();
+    /* USER CODE END DMA2_Stream0_IRQn 0 */
+    HAL_DMA_IRQHandler(&hdma_adc1);
+    /* USER CODE BEGIN DMA2_Stream0_IRQn 1 */
+    //traceISR_EXIT();
+    /* USER CODE END DMA2_Stream0_IRQn 1 */
 }
 
 /**
@@ -335,11 +363,11 @@ void DMA2_Stream2_IRQHandler(void) {
   */
 void ETH_IRQHandler(void) {
     /* USER CODE BEGIN ETH_IRQn 0 */
-
+    traceISR_ENTER();
     /* USER CODE END ETH_IRQn 0 */
     HAL_ETH_IRQHandler(&heth);
     /* USER CODE BEGIN ETH_IRQn 1 */
-
+    traceISR_EXIT();
     /* USER CODE END ETH_IRQn 1 */
 }
 
@@ -348,11 +376,11 @@ void ETH_IRQHandler(void) {
   */
 void OTG_FS_IRQHandler(void) {
     /* USER CODE BEGIN OTG_FS_IRQn 0 */
-
+    traceISR_ENTER();
     /* USER CODE END OTG_FS_IRQn 0 */
-    HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
+    tud_int_handler(0);
     /* USER CODE BEGIN OTG_FS_IRQn 1 */
-
+    traceISR_EXIT();
     /* USER CODE END OTG_FS_IRQn 1 */
 }
 
@@ -361,11 +389,11 @@ void OTG_FS_IRQHandler(void) {
   */
 void OTG_HS_IRQHandler(void) {
     /* USER CODE BEGIN OTG_HS_IRQn 0 */
-
+    traceISR_ENTER();
     /* USER CODE END OTG_HS_IRQn 0 */
     HAL_HCD_IRQHandler(&hhcd_USB_OTG_HS);
     /* USER CODE BEGIN OTG_HS_IRQn 1 */
-
+    traceISR_EXIT();
     /* USER CODE END OTG_HS_IRQn 1 */
 }
 

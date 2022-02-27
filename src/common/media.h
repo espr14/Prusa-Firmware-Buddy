@@ -3,9 +3,6 @@
 
 #include <inttypes.h>
 
-static const uint16_t MEDIA_PRINT_FILENAME_SIZE = 128;
-static const uint16_t MEDIA_PRINT_FILEPATH_SIZE = 128;
-
 typedef enum {
     media_state_REMOVED = 0,  // media is inserted
     media_state_INSERTED = 1, // media is removed
@@ -21,6 +18,7 @@ typedef enum {
     media_print_state_NONE = 0,
     media_print_state_PRINTING = 1,
     media_print_state_PAUSED = 2,
+    media_print_state_PAUSING = 3,
 } media_print_state_t;
 
 #ifdef __cplusplus

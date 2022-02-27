@@ -43,6 +43,7 @@
 #include "module/printcounter.h" // PrintCounter or Stopwatch
 #include "feature/closedloop.h"
 #include "feature/safety_timer.h"
+#include "marlin_server.hpp"
 
 #include "HAL/shared/Delay.h"
 
@@ -357,7 +358,7 @@ bool printingIsPaused() {
 /**
  * Whether any heater (bed or hotend) has target temperature != 0
  */
-static bool anyHeatherIsActive() {
+bool anyHeatherIsActive() {
   bool active = false;
   #if HAS_HEATED_BED
     active |= thermalManager.degTargetBed() != 0;
@@ -390,13 +391,8 @@ void manage_inactivity(const bool ignore_stepper_queue/*=false*/) {
 
   const millis_t ms = millis();
 
-  if (printingIsActive() || printingIsPaused() || !anyHeatherIsActive()) {
-      safety_timer_reset();
-  }
-
-  if (safety_timer_is_expired()) {
-    thermalManager.disable_all_heaters();
-
+  SafetyTimer::expired_t expired = SafetyTimer::Instance().Loop();
+  if (expired ==  SafetyTimer::expired_t::yes)  {
     #ifdef ACTION_ON_SAFETY_TIMER_EXPIRED
       host_action_safety_timer_expired();
     #endif
@@ -622,10 +618,16 @@ void manage_inactivity(const bool ignore_stepper_queue/*=false*/) {
 
 /**
  * Standard idle routine keeps the machine alive
+ *
+ * @param waiting
+ *   @par @c true Caller is waiting for some event, release CPU to other tasks.
+ *   @par @c false Caller has more data to process, do not release CPU.
+ * @param no_stepper_sleep
  */
 void idle(
+    bool waiting
   #if ENABLED(ADVANCED_PAUSE_FEATURE)
-    bool no_stepper_sleep/*=false*/
+    , bool no_stepper_sleep/*=false*/
   #endif
 ) {
   #if ENABLED(POWER_LOSS_RECOVERY) && PIN_EXISTS(POWER_LOSS)
@@ -706,6 +708,7 @@ void idle(
   #if ENABLED(POLL_JOG)
     joystick.inject_jog_moves();
   #endif
+  if (waiting) delay(1);
 }
 
 /**
@@ -714,8 +717,10 @@ void idle(
  */
 void kill(PGM_P const lcd_error/*=nullptr*/, PGM_P const lcd_component/*=nullptr*/, const bool steppers_off/*=false*/) {
   thermalManager.disable_all_heaters();
-
-  SERIAL_ERROR_MSG(MSG_ERR_KILLED);
+  
+    //while connected to octoprint, this line kills whole firmware
+    //TODO: fix with new logging framework from Alan
+//   SERIAL_ERROR_MSG(MSG_ERR_KILLED);
 
   #if HAS_DISPLAY
     ui.kill_screen(lcd_error ?: GET_TEXT(MSG_KILLED), lcd_component);
@@ -1127,7 +1132,7 @@ void loop() {
   for (;;) {
   #endif
 
-    idle(); // Do an idle first so boot is slightly faster
+    idle(false); // Do an idle first so boot is slightly faster
 
     #if ENABLED(SDSUPPORT)
 

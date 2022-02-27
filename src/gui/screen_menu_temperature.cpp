@@ -24,13 +24,15 @@ protected:
 
 /*****************************************************************************/
 //parent alias
-using Screen = ScreenMenu<EHeader::Off, EFooter::On, HelpLines_None, MI_RETURN, MI_NOZZLE, MI_HEATBED, MI_PRINTFAN, MI_COOLDOWN>;
+using Screen = ScreenMenu<EFooter::On, MI_RETURN, MI_NOZZLE, MI_HEATBED, MI_PRINTFAN, MI_COOLDOWN>;
 
 class ScreenMenuTemperature : public Screen {
 public:
     constexpr static const char *label = N_("TEMPERATURE");
     ScreenMenuTemperature()
-        : Screen(_(label)) {}
+        : Screen(_(label)) {
+        EnableLongHoldScreenAction();
+    }
 
 protected:
     virtual void windowEvent(EventLock /*has private ctor*/, window_t *sender, GUI_event_t event, void *param) override;
@@ -43,9 +45,9 @@ void ScreenMenuTemperature::windowEvent(EventLock /*has private ctor*/, window_t
         marlin_set_target_bed(0);
         marlin_set_fan_speed(0);
 
-        Item<MI_NOZZLE>().ClrVal();
-        Item<MI_HEATBED>().ClrVal();
-        Item<MI_PRINTFAN>().ClrVal();
+        Item<MI_NOZZLE>().SetVal(0);
+        Item<MI_HEATBED>().SetVal(0);
+        Item<MI_PRINTFAN>().SetVal(0);
     } else {
         SuperWindowEvent(sender, event, param);
     }

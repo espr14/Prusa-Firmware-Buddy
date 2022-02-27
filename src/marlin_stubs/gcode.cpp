@@ -1,4 +1,3 @@
-#include "../../lib/Marlin/Marlin/src/inc/MarlinConfig.h"
 #include "../../lib/Marlin/Marlin/src/gcode/gcode.h"
 
 #include "PrusaGcodeSuite.hpp"
@@ -12,6 +11,9 @@ bool GcodeSuite::process_parsed_command_custom(bool no_ok) {
         switch (parser.codenum) {
         case 50:
             PrusaGcodeSuite::M50(); //selftest
+            return true;
+        case 300:
+            PrusaGcodeSuite::M300();
             return true;
 #if defined(_DEBUG)
         case 330:
@@ -29,7 +31,27 @@ bool GcodeSuite::process_parsed_command_custom(bool no_ok) {
         case 334:
             PrusaGcodeSuite::M334();
             return true;
+#endif // _DEBUG
+        case 505:
+            PrusaGcodeSuite::M505();
+            return true;
+        case 997:
+            PrusaGcodeSuite::M997();
+            return true;
+
+#ifdef M999_MCU_RESET
+        case 999:
+            if (parser.seen('R')) {
+                PrusaGcodeSuite::M999();
+                return true;
+            } else {
+                return false;
+            }
+        case 1400:
+            PrusaGcodeSuite::M1400();
+            return true;
 #endif
+
         default:
             return false;
         }

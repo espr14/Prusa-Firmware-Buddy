@@ -623,7 +623,7 @@ class Temperature {
       }
 
       #if HAS_TEMP_HOTEND
-        static bool wait_for_hotend(const uint8_t target_extruder, const bool no_wait_for_cooling=true
+        static bool wait_for_hotend(const uint8_t target_extruder, const bool no_wait_for_cooling=true, bool fan_cooling=false
           #if G26_CLICK_CAN_CANCEL
             , const bool click_to_cancel=false
           #endif
@@ -721,10 +721,21 @@ class Temperature {
      */
     static int16_t getHeaterPower(const heater_ind_t heater);
 
+private:
+    enum class disable_bed_t : bool {no, yes};
+    /**
+     * used by disable_all_heaters and disable_hotend
+     */
+    static void disable_heaters(disable_bed_t disable_bed);
+public:
     /**
      * Switch off all heaters, set all target temperatures to 0
      */
     static void disable_all_heaters();
+    /**
+     * Switch off all hotends, set all hotend target temperatures to 0
+     */
+    static void disable_hotend();
 
     /**
      * Perform auto-tuning for hotend or bed in response to M303

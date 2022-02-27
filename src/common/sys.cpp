@@ -1,9 +1,15 @@
 // sys.cpp - system functions
+#include <stdlib.h>
 #include "sys.h"
 #include "shared_config.h"
 #include "stm32f4xx_hal.h"
 #include "st25dv64k.h"
-#include "dbg.h"
+#include "log.h"
+
+#define DFU_REQUEST_RTC_BKP_REGISTER RTC->BKP0R
+
+// magic value of RTC->BKP0R for requesting DFU bootloader entry
+static const constexpr uint32_t DFU_REQUESTED_MAGIC_VALUE = 0xF1E2D3C5;
 
 //firmware update flag
 static const constexpr uint16_t FW_UPDATE_FLAG_ADDRESS = 0x040B;
@@ -20,7 +26,7 @@ version_t &boot_version = *(version_t *)(BOOTLOADER_VERSION_ADDRESS); // (addres
 volatile uint8_t *psys_fw_valid = (uint8_t *)0x080FFFFF; //last byte in the flash
 
 void sys_reset(void) {
-    _Static_assert(sizeof(data_exchange_t) == 16, "invalid sizeof(data_exchange_t)");
+    static_assert(sizeof(data_exchange_t) == 16, "invalid sizeof(data_exchange_t)");
 
     uint32_t aircr = SCB->AIRCR & 0x0000ffff; //read AIRCR, mask VECTKEY
     if (__get_PRIMASK() & 1)
@@ -32,7 +38,35 @@ void sys_reset(void) {
         ; //endless loop
 }
 
-void sys_dfu_boot(void) {
+void sys_dfu_request_and_reset(void) {
+    DFU_REQUEST_RTC_BKP_REGISTER = DFU_REQUESTED_MAGIC_VALUE;
+    NVIC_SystemReset();
+}
+
+bool sys_dfu_requested(void) {
+    return DFU_REQUEST_RTC_BKP_REGISTER == DFU_REQUESTED_MAGIC_VALUE;
+}
+
+void sys_dfu_boot_enter(void) {
+    // clear the flag
+    DFU_REQUEST_RTC_BKP_REGISTER = 0;
+
+    // disable systick
+    SysTick->CTRL = 0;
+    SysTick->LOAD = 0;
+    SysTick->VAL = 0;
+
+    // remap memory
+    SYSCFG->MEMRMP = 0x01;
+
+    // enter the bootloader
+    volatile uintptr_t system_addr_start = 0x1FFF0000;
+    auto system_bootloader_start = (void (*)(void))(*(uint32_t *)(system_addr_start + 4));
+    __set_MSP(*(uint32_t *)system_addr_start); // prepare stack pointer
+    system_bootloader_start();                 // jump into the bootloader
+
+    // we should never reach this
+    abort();
 }
 
 int sys_calc_flash_latency(int freq) {
@@ -135,9 +169,9 @@ void sys_sscg_disable(void) {
     sys_pll_disable();
     RCC->SSCGR = sscgr;
     sys_pll_enable();
-    _dbg0("written SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
+    log_debug(Buddy, "written SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
     sscgr = RCC->SSCGR;
-    _dbg0("readback SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
+    log_debug(Buddy, "readback SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
     __enable_irq();
 }
 
@@ -154,9 +188,9 @@ void sys_sscg_enable(void) {
     sys_pll_disable();
     RCC->SSCGR = sscgr;
     sys_pll_enable();
-    _dbg0("written SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
+    log_debug(Buddy, "written SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
     sscgr = RCC->SSCGR;
-    _dbg0("readback SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
+    log_debug(Buddy, "readback SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
     __enable_irq();
 }
 
@@ -169,11 +203,11 @@ void sys_sscg_set_config(int freq, int depth) {
     uint32_t incstep = ((sscgr & RCC_SSCGR_INCSTEP_Msk) >> RCC_SSCGR_INCSTEP_Pos);
     uint32_t spreadsel = ((sscgr & RCC_SSCGR_SPREADSEL_Msk) >> RCC_SSCGR_SPREADSEL_Pos);
     uint32_t sscgen = ((sscgr & RCC_SSCGR_SSCGEN_Msk) >> RCC_SSCGR_SSCGEN_Pos);
-    _dbg0("SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
-    _dbg0(" MODPER    = 0x%08lx (%lu)", modper, modper);
-    _dbg0(" INCSTEP   = 0x%08lx (%lu)", incstep, incstep);
-    _dbg0(" SPREADSEL = 0x%08lx (%lu)", spreadsel, spreadsel);
-    _dbg0(" SSCGEN    = 0x%08lx (%lu)", sscgen, sscgen);
+    log_debug(Buddy, "SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
+    log_debug(Buddy, " MODPER    = 0x%08lx (%lu)", modper, modper);
+    log_debug(Buddy, " INCSTEP   = 0x%08lx (%lu)", incstep, incstep);
+    log_debug(Buddy, " SPREADSEL = 0x%08lx (%lu)", spreadsel, spreadsel);
+    log_debug(Buddy, " SSCGEN    = 0x%08lx (%lu)", sscgen, sscgen);
     HAL_RCC_GetOscConfig(&RCC_OscInitStruct); //read Osc config
     plln = RCC_OscInitStruct.PLL.PLLN;
     //modulation frequency = freq
@@ -192,17 +226,17 @@ void sys_sscg_set_config(int freq, int depth) {
     sys_pll_disable();
     RCC->SSCGR = sscgr;
     sys_pll_enable();
-    _dbg0("written SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
+    log_debug(Buddy, "written SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
     sscgr = RCC->SSCGR;
     modper = ((sscgr & RCC_SSCGR_MODPER_Msk) >> RCC_SSCGR_MODPER_Pos);
     incstep = ((sscgr & RCC_SSCGR_INCSTEP_Msk) >> RCC_SSCGR_INCSTEP_Pos);
     spreadsel = ((sscgr & RCC_SSCGR_SPREADSEL_Msk) >> RCC_SSCGR_SPREADSEL_Pos);
     sscgen = ((sscgr & RCC_SSCGR_SSCGEN_Msk) >> RCC_SSCGR_SSCGEN_Pos);
-    _dbg0("readback SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
-    _dbg0(" MODPER    = 0x%08lx (%lu)", modper, modper);
-    _dbg0(" INCSTEP   = 0x%08lx (%lu)", incstep, incstep);
-    _dbg0(" SPREADSEL = 0x%08lx (%lu)", spreadsel, spreadsel);
-    _dbg0(" SSCGEN    = 0x%08lx (%lu)", sscgen, sscgen);
+    log_debug(Buddy, "readback SSCGR = 0x%08lx (%lu)", sscgr, sscgr);
+    log_debug(Buddy, " MODPER    = 0x%08lx (%lu)", modper, modper);
+    log_debug(Buddy, " INCSTEP   = 0x%08lx (%lu)", incstep, incstep);
+    log_debug(Buddy, " SPREADSEL = 0x%08lx (%lu)", spreadsel, spreadsel);
+    log_debug(Buddy, " SSCGEN    = 0x%08lx (%lu)", sscgen, sscgen);
 }
 
 int sys_sscg_get_config(float *pfreq, float *pdepth) {
@@ -262,28 +296,12 @@ void sys_fw_update_on_restart_enable(void) {
     ram_data_exchange.fw_update_flag = FW_UPDATE_ENABLE;
 }
 
+extern void sys_fw_update_older_on_restart_enable(void) {
+    ram_data_exchange.fw_update_flag = FW_UPDATE_OLDER;
+}
+
 void sys_fw_update_on_restart_disable(void) {
     ram_data_exchange.fw_update_flag = FW_UPDATE_DISABLE;
-}
-
-// returns 1 if last byte in the flash is nonzero
-int sys_fw_is_valid(void) {
-    return (*psys_fw_valid != 0) ? 1 : 0;
-}
-
-// write zero to last byte in the flash
-int sys_fw_invalidate(void) {
-    uint8_t zero = 0x00;
-    if (sys_flash_is_empty((void *)(psys_fw_valid), 1))
-        if (sys_flash_write((void *)(psys_fw_valid), &zero, 1) != 1)
-            return 0;
-    return (*psys_fw_valid == zero) ? 1 : 0;
-}
-
-// format last flash sector (128kB 0x)
-// for testing purposes only - not used in firmware
-int sys_fw_validate(void) {
-    return sys_flash_erase_sector(FLASH_SECTOR_11);
 }
 
 int sys_flash_is_empty(void *ptr, int size) {

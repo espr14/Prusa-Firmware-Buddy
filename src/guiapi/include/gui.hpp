@@ -16,8 +16,6 @@ extern void gui_run(void);
 
 extern void gui_init(void);
 
-extern void gui_invalidate(void);
-
 extern void gui_redraw(void);
 
 #ifdef GUI_USE_RTOS
@@ -34,8 +32,6 @@ extern osThreadId gui_task_handle;
     #include "window_roll_text.hpp"
     #include "window_numb.hpp"
     #include "window_icon.hpp"
-    #include "window_list.hpp"
-    #include "window_spin.hpp"
     #include "window_term.hpp"
     #include "window_msgbox.hpp"
     #include "window_progress.hpp"

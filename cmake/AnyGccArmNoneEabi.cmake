@@ -74,13 +74,23 @@ set(CMAKE_CXX_COMPILER_TARGET
     ${triple}
     CACHE STRING "" FORCE
     )
+
+set(SPECS "--specs=nosys.specs --specs=nano.specs")
+set(CMAKE_C_FLAGS_INIT
+    "${SPECS}"
+    CACHE STRING "" FORCE
+    )
+set(CMAKE_CXX_FLAGS_INIT
+    "${SPECS}"
+    CACHE STRING "" FORCE
+    )
 set(CMAKE_EXE_LINKER_FLAGS_INIT
-    "--specs=nosys.specs"
+    "-u _scanf_float"
     CACHE STRING "" FORCE
     )
 
 set(CMAKE_ASM_COMPILE_OBJECT
-    "<CMAKE_ASM_COMPILER> <DEFINES> <FLAGS> -o <OBJECT> -c <SOURCE>"
+    "<CMAKE_ASM_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> -c <SOURCE>"
     CACHE STRING "" FORCE
     )
 

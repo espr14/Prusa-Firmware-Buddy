@@ -47,6 +47,8 @@ extern void marlin_server_stop_processing(void);
 // direct call of babystep.add_steps(Z_AXIS, ...)
 extern void marlin_server_do_babystep_Z(float offs);
 
+extern void marlin_server_move_axis(float pos, float feedrate, size_t axis);
+
 // direct call of 'enqueue_and_echo_command', returns 1 if command enqueued, otherwise 0
 extern int marlin_server_enqueue_gcode(const char *gcode);
 
@@ -67,6 +69,9 @@ extern void marlin_server_manage_heater(void);
 
 // direct call of planner.quick_stop()
 extern void marlin_server_quick_stop(void);
+
+// direct print file with SFM format
+void marlin_server_print_start(const char *filename);
 
 //
 extern uint32_t marlin_server_get_command(void);
@@ -93,7 +98,10 @@ extern void marlin_server_print_resume(void);
 extern void marlin_server_print_reheat_start(void);
 
 //
-extern int marlin_server_print_reheat_ready(void);
+extern bool marlin_server_print_reheat_ready();
+
+// return true if the printer is not moving (idle, paused, aborted or finished)
+extern bool marlin_server_printer_idle();
 
 //
 extern void marlin_server_park_head(void);
@@ -118,6 +126,16 @@ extern void marlin_server_set_temp_to_display(float value);
 
 //
 extern float marlin_server_get_temp_to_display(void);
+
+//
+extern float marlin_server_get_temp_nozzle(void);
+
+//
+extern void marlin_server_resuming_begin(void);
+
+extern uint32_t marlin_server_get_user_click_count(void);
+
+extern uint32_t marlin_server_get_user_move_count(void);
 
 #ifdef __cplusplus
 }

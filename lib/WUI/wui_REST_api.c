@@ -3,91 +3,254 @@
  *
  *  Created on: Jan 24, 2020
  *      Author: joshy <joshymjose[at]gmail.com>
+ *  Modify on 09/17/2021
+ *      Author: Marek Mosna <marek.mosna[at]prusa3d.cz>
  */
 
 #include "wui_REST_api.h"
 #include "wui_api.h"
-#include "wui.h"
-#include "filament.h"
+#include "filament.h" //get_selected_filament_name
+#include "json_encode.h"
+#include "marlin_client.h"
+#include "lwip/init.h"
+#include "netdev.h"
+
 #include <string.h>
-#include "wui_vars.h"
-#include "eeprom.h"
+#include <stdio.h>
 
-#define BDY_WUI_API_BUFFER_SIZE 512
+extern uint32_t start_print;
 
-// for data exchange between wui thread and HTTP thread
-static wui_vars_t wui_vars_copy;
+void get_printer(char *data, const uint32_t buf_len) {
+    marlin_vars_t *vars = marlin_vars();
+    const char *filament_material = get_selected_filament_name();
 
-static void print_dur_to_string(char *buffer, size_t buffer_len, uint32_t print_dur) {
-    int d = ((print_dur / 60) / 60) / 24,
-        h = ((print_dur / 60) / 60) % 24,
-        m = (print_dur / 60) % 60,
-        s = print_dur % 60;
+    bool operational = true;
+    bool paused = false;
+    bool printing = false;
+    bool cancelling = false;
+    bool pausing = false;
+    bool ready = true;
+    bool busy = false;
 
-    if (d) {
-        snprintf(buffer, buffer_len, "%3id %2ih %2im", d, h, m);
-    } else if (h) {
-        snprintf(buffer, buffer_len, "     %2ih %2im", h, m);
-    } else if (m) {
-        snprintf(buffer, buffer_len, "     %2im %2is", m, s);
-    } else {
-        snprintf(buffer, buffer_len, "         %2is", s);
+    marlin_client_loop();
+
+    switch (vars->print_state) {
+    case mpsPrinting:
+        printing = true;
+        ready = operational = false;
+        break;
+    case mpsPausing_Begin:
+    case mpsPausing_WaitIdle:
+    case mpsPausing_ParkHead:
+        printing = pausing = paused = busy = true;
+        ready = operational = false;
+        break;
+    case mpsPaused:
+        printing = paused = true;
+        ready = operational = false;
+        break;
+    case mpsResuming_Begin:
+    case mpsResuming_Reheating:
+    case mpsResuming_UnparkHead:
+        ready = operational = false;
+        busy = printing = true;
+        break;
+    case mpsAborting_Begin:
+    case mpsAborting_WaitIdle:
+    case mpsAborting_ParkHead:
+        cancelling = busy = true;
+        ready = operational = false;
+        break;
+    case mpsFinishing_WaitIdle:
+    case mpsFinishing_ParkHead:
+        busy = true;
+        ready = operational = false;
+        break;
+    case mpsAborted:
+    case mpsFinished:
+    case mpsIdle:
+    default:
+        break;
     }
+
+    JSONIFY_STR(filament_material);
+
+    snprintf(data, buf_len,
+        "{"
+        "\"telemetry\":{"
+        "\"temp-bed\":%.1f,"
+        "\"temp-nozzle\":%.1f,"
+        "\"print-speed\":%d,"
+        "\"z-height\":%.1f,"
+        "\"material\":\"%s\""
+        "},"
+        "\"temperature\":{"
+        "\"tool0\":{"
+        "\"actual\":%.1f,"
+        "\"target\":%.1f,"
+        // Note: our own extension, because our printers sometimes display
+        // different "target" temperature than what they heat towards.
+        "\"display\":%.1f,"
+        "\"offset\":0"
+        "},"
+        "\"bed\":{"
+        "\"actual\":%.1f,"
+        "\"target\":%.1f,"
+        "\"offset\":0"
+        "}"
+        "},"
+        "\"state\":{"
+        "\"text\":\"%s\","
+        "\"flags\":{"
+        "\"operational\":%s,"
+        "\"paused\":%s,"
+        "\"printing\":%s,"
+        "\"cancelling\":%s,"
+        "\"pausing\":%s,"
+        // We don't have an SD card.
+        "\"sdReady\":false,"
+        "\"error\":false,"
+        "\"ready\":%s,"
+        "\"closedOrError\":false,"
+        "\"busy\":%s"
+        "}"
+        "}"
+        "}",
+        (double)vars->temp_bed,
+        (double)vars->temp_nozzle,
+        (int)vars->print_speed,
+        (double)vars->pos[2], // XYZE, mm
+        filament_material_escaped,
+        (double)vars->temp_nozzle,
+        (double)vars->target_nozzle,
+        (double)vars->display_nozzle,
+        (double)vars->temp_bed,
+        (double)vars->target_bed,
+
+        // No need to json-escape here, we have const inputs in here.
+        printing ? "Printing" : "Operational",
+
+        jsonify_bool(operational), jsonify_bool(paused), jsonify_bool(printing), jsonify_bool(cancelling), jsonify_bool(pausing),
+        jsonify_bool(ready), jsonify_bool(busy));
 }
 
-void get_telemetry_for_local(char *data, const uint32_t buf_len) {
+void get_version(char *data, const uint32_t buf_len) {
+    /*
+     * FIXME: The netdev_get_hostname doesn't properly synchronize. That needs
+     * a fix of its own. But to not make things even worse than they are, we
+     * make sure to copy it out to our side first and make sure it doesn't
+     * change during the JSON stringification which could lead to a different
+     * length of the output and stack smashing.
+     */
+    const char *hostname_unsynchronized = netdev_get_hostname(netdev_get_active_id());
+    const size_t hostname_in_len = strlen(hostname_unsynchronized);
+    char hostname[hostname_in_len + 1];
+    memcpy(hostname, hostname_unsynchronized, hostname_in_len);
+    hostname[hostname_in_len] = '\0';
+    JSONIFY_STR(hostname);
 
-    osStatus status = osMutexWait(wui_thread_mutex_id, osWaitForever);
-    if (status == osOK) {
-        wui_vars_copy = wui_vars;
+    snprintf(data, buf_len,
+        "{"
+        "\"api\":\"%s\","
+        "\"server\":\"%s\","
+        "\"text\":\"PrusaLink MINI\","
+        "\"hostname\":\"%s\""
+        "}",
+        PL_VERSION_STRING, LWIP_VERSION_STRING, hostname_escaped);
+}
+
+void get_job(char *data, const uint32_t buf_len) {
+    marlin_vars_t *vars = marlin_vars();
+
+    marlin_client_loop();
+
+    bool has_job = false;
+    const char *state = "Unknown";
+
+    switch (vars->print_state) {
+    case mpsFinishing_WaitIdle:
+    case mpsFinishing_ParkHead:
+    case mpsPrinting:
+        has_job = true;
+        state = "Printing";
+        break;
+    case mpsPausing_Begin:
+    case mpsPausing_WaitIdle:
+    case mpsPausing_ParkHead:
+        has_job = true;
+        state = "Pausing";
+        break;
+    case mpsPaused:
+        has_job = true;
+        state = "Paused";
+        break;
+    case mpsResuming_Begin:
+    case mpsResuming_Reheating:
+    case mpsResuming_UnparkHead:
+        has_job = true;
+        state = "Resuming";
+        break;
+    case mpsAborting_Begin:
+    case mpsAborting_WaitIdle:
+    case mpsAborting_ParkHead:
+        has_job = true;
+        state = "Cancelling";
+        break;
+    case mpsAborted:
+    case mpsFinished:
+    case mpsIdle:
+        state = "Operational";
+        break;
     }
-    osMutexRelease(wui_thread_mutex_id);
 
-    int32_t actual_nozzle = (int32_t)(wui_vars_copy.temp_nozzle);
-    int32_t actual_heatbed = (int32_t)(wui_vars_copy.temp_bed);
-    double z_pos_mm = (double)wui_vars_copy.pos[Z_AXIS_POS];
-    uint16_t print_speed = (uint16_t)(wui_vars_copy.print_speed);
-    uint16_t flow_factor = (uint16_t)(wui_vars_copy.flow_factor);
-    const char *filament_material = filaments[get_filament()].name;
-    int8_t time_zone = variant8_get_i8(eeprom_get_var(EEVAR_TIMEZONE));
+    if (has_job) {
+        /*
+         * The file names. We probably don't work with anything that's unicode
+         * anyway. So we can use the long one for both name and display.
+         *
+         * The path is available only in the short version, unfortunately, but
+         * that's for internal uses of things anyway, so it probably doesn't
+         * matter.
+         */
+        const char *filename = vars->media_LFN;
+        JSONIFY_STR(filename);
+        const char *path = vars->media_SFN_path;
+        JSONIFY_STR(path);
 
-    if (!wui_vars_copy.sd_printing) {
-        snprintf(data, buf_len, "{"
-                                "\"temp_nozzle\":%ld,"
-                                "\"temp_bed\":%ld,"
-                                "\"material\":\"%s\","
-                                "\"pos_z_mm\":%.2f,"
-                                "\"printing_speed\":%d,"
-                                "\"flow_factor\":%d"
-                                "}",
-            actual_nozzle, actual_heatbed, filament_material,
-            z_pos_mm, print_speed, flow_factor);
-        return;
+        snprintf(data, buf_len,
+            "{"
+            "\"state\":\"%s\","
+            "\"job\":{"
+            "\"estimatedPrintTime\":%" PRIu32 ","
+            "\"file\":{\"name\":\"%s\",\"path\":\"%s\",\"display\":\"%s\"}"
+            "}," // } job
+            "\"progress\":{"
+            "\"completion\":%f,"
+            "\"printTime\":%" PRIu32 ","
+            "\"printTimeLeft\":%" PRIu32 ""
+            "}" // } progress
+            "}",
+            state,
+
+            vars->print_duration + vars->time_to_end, filename_escaped, path_escaped, filename_escaped,
+            ((double)vars->sd_percent_done / 100.0), // We might want to have better resolution that whole percents.
+            vars->print_duration, vars->time_to_end);
+    } else {
+        /*
+         * If we do not have any job, we don't really have much meaningful info
+         * to provide. Unfortunately, the octoprint API docs don't mention the
+         * situation.
+         *
+         * Examining their source code it seems they are returning nulls in
+         * such case, though if this is by choice or accidental is unclear.
+         * Let's do the same.
+         */
+        snprintf(data, buf_len,
+            "{"
+            "\"state\": \"%s\","
+            "\"job\": null,"
+            "\"progress\": null"
+            "}",
+            state);
     }
-
-    char print_time[15];
-    uint32_t time_to_end = wui_vars_copy.time_to_end;
-
-    if (wui_vars_copy.time_to_end == TIME_TO_END_INVALID) {
-        time_to_end = 0;
-    }
-
-    print_dur_to_string(print_time, sizeof(print_time), wui_vars_copy.print_dur);
-
-    snprintf(data, buf_len, "{"
-                            "\"temp_nozzle\":%ld,"
-                            "\"temp_bed\":%ld,"
-                            "\"material\":\"%s\","
-                            "\"pos_z_mm\":%.2f,"
-                            "\"printing_speed\":%d,"
-                            "\"flow_factor\":%d,"
-                            "\"progress\":%d,"
-                            "\"print_dur\":\"%s\","
-                            "\"time_est\":\"%lu\","
-                            "\"time_zone\":\"%d\","
-                            "\"project_name\":\"%s\""
-                            "}",
-        actual_nozzle, actual_heatbed, filament_material,
-        z_pos_mm, print_speed, flow_factor, wui_vars_copy.sd_precent_done,
-        print_time, time_to_end, time_zone, wui_vars_copy.gcode_name);
 }
