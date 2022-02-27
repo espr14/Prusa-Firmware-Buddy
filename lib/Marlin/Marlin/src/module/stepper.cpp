@@ -2403,45 +2403,9 @@ void Stepper::report_positions() {
           BABYSTEP_AXIS(Z, BABYSTEP_INVERT_Z, direction);
 
         #else // DELTA
-
-          const bool z_direction = direction ^ BABYSTEP_INVERT_Z;
-
-          enable_X();
-          enable_Y();
-          enable_Z();
-
-          #if MINIMUM_STEPPER_PRE_DIR_DELAY > 0
-            DELAY_NS(MINIMUM_STEPPER_PRE_DIR_DELAY);
-          #endif
-
-          const uint8_t old_x_dir_pin = X_DIR_READ(),
-                        old_y_dir_pin = Y_DIR_READ(),
-                        old_z_dir_pin = Z_DIR_READ();
-
-          X_DIR_WRITE(INVERT_X_DIR ^ z_direction);
-          Y_DIR_WRITE(INVERT_Y_DIR ^ z_direction);
-          Z_DIR_WRITE(INVERT_Z_DIR ^ z_direction);
-
-          #if MINIMUM_STEPPER_POST_DIR_DELAY > 0
-            DELAY_NS(MINIMUM_STEPPER_POST_DIR_DELAY);
-          #endif
-
-          _SAVE_START;
-
-          X_STEP_WRITE(!INVERT_X_STEP_PIN);
-          Y_STEP_WRITE(!INVERT_Y_STEP_PIN);
-          Z_STEP_WRITE(!INVERT_Z_STEP_PIN);
-
-          _PULSE_WAIT;
-
-          X_STEP_WRITE(INVERT_X_STEP_PIN);
-          Y_STEP_WRITE(INVERT_Y_STEP_PIN);
-          Z_STEP_WRITE(INVERT_Z_STEP_PIN);
-
-          // Restore direction bits
-          X_DIR_WRITE(old_x_dir_pin);
-          Y_DIR_WRITE(old_y_dir_pin);
-          Z_DIR_WRITE(old_z_dir_pin);
+          BABYSTEP_AXIS(X, BABYSTEP_INVERT_Z, direction);
+          BABYSTEP_AXIS(Y, BABYSTEP_INVERT_Z, direction);
+          BABYSTEP_AXIS(Z, BABYSTEP_INVERT_Z, direction);
 
         #endif
 
