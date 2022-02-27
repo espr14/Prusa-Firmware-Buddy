@@ -1466,7 +1466,7 @@
 // @section tmc_smart
 
 /**
- * To use TMC2130, TMC2160, TMC2660, TMC5130, TMC5160 stepper drivers in SPI mode
+ * To use TMC2130, TMC2160, TMC2208, TMC2209, TMC2660, TMC5130, TMC5160 stepper drivers in SPI mode
  * connect your SPI pins to the hardware SPI interface on your board and define
  * the required CS pins in your `pins_MYBOARD.h` file. (e.g., RAMPS 1.4 uses AUX3
  * pins `X_CS_PIN 53`, `Y_CS_PIN 49`, etc.).
@@ -1488,7 +1488,7 @@
 
     #if AXIS_IS_TMC(X)
         #define X_CURRENT 350 // (mA) RMS current. Multiply by 1.414 for peak current.
-        #define X_MICROSTEPS 16 // 0..256
+        #define X_MICROSTEPS 16*MS_MULT // 0..256
         #define X_RSENSE 0.22
     #endif
 
@@ -1500,7 +1500,7 @@
 
     #if AXIS_IS_TMC(Y)
         #define Y_CURRENT 350
-        #define Y_MICROSTEPS 16
+        #define Y_MICROSTEPS 16*MS_MULT
         #define Y_RSENSE 0.22
     #endif
 
@@ -1512,7 +1512,7 @@
 
     #if AXIS_IS_TMC(Z)
         #define Z_CURRENT 350 //530//650
-        #define Z_MICROSTEPS 16
+        #define Z_MICROSTEPS 16*MS_MULT
         #define Z_RSENSE 0.22
     #endif
 
