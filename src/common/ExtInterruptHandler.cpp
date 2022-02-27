@@ -8,6 +8,9 @@
 #include "../../lib/Marlin/Marlin/src/HAL/HAL_STM32_F4_F7/endstop_ISR.h"
 #include <type_traits>
 
+#include "../../module/endstops.h"
+void endstop_ISR() { endstops.update(); }
+
 static constexpr uint16_t getIoHalPin(buddy::hw::IoPort, buddy::hw::IoPin ioPin) {
     return buddy::hw::Pin::IoPinToHal(ioPin);
 }
