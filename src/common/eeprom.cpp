@@ -174,12 +174,45 @@ static constexpr eeprom_head_t eeprom_head_defaults = {
     EEPROM_DATASIZE, // EEVAR_DATASIZE
     0,               // EEVAR_FW_VERSION
     0,               // EEVAR_FW_BUILD
-};
-
-// eeprom variable defaults
-static const eeprom_vars_t eeprom_var_defaults = {
-    eeprom_head_defaults,
-    body_defaults,
+    0,               // EEVAR_FILAMENT_TYPE
+    0,               // EEVAR_FILAMENT_COLOR
+    1,               // EEVAR_RUN_SELFTEST
+    1,               // EEVAR_RUN_XYZCALIB
+    1,               // EEVAR_RUN_FIRSTLAY
+    1,               // EEVAR_FSENSOR_ENABLED
+    0,               // EEVAR_ZOFFSET
+#if ENABLED(PIDTEMP)
+    DEFAULT_Kp,      // EEVAR_PID_NOZ_P
+    scalePID_i(DEFAULT_Ki),      // EEVAR_PID_NOZ_I
+    scalePID_d(DEFAULT_Kd),      // EEVAR_PID_NOZ_D
+#else
+    0, 0, 0,
+#endif
+    DEFAULT_bedKp,   // EEVAR_PID_BED_P
+    scalePID_i(DEFAULT_bedKi),   // EEVAR_PID_BED_I
+    scalePID_d(DEFAULT_bedKd),   // EEVAR_PID_BED_D
+    0,               // EEVAR_LAN_FLAG
+    0,               // EEVAR_LAN_IP4_ADDR
+    0,               // EEVAR_LAN_IP4_MSK
+    0,               // EEVAR_LAN_IP4_GW
+    0,               // EEVAR_LAN_IP4_DNS1
+    0,               // EEVAR_LAN_IP4_DNS2
+    "PrusaMINI",     // EEVAR_LAN_HOSTNAME
+    0,               // EEVAR_TIMEZONE
+    0xff,            // EEVAR_SOUND_MODE
+    5,               // EEVAR_SOUND_VOLUME
+    0xffff,          // EEVAR_LANGUAGE
+    0,               // EEVAR_FILE_SORT
+    1,               // EEVAR_MENU_TIMEOUT
+    0,               // EEVAR_ACTIVE_SHEET
+    {"Smooth1", 0.0f },
+    {"Smooth2", FLT_MAX },
+    {"Textur1", FLT_MAX },
+    {"Textur2", FLT_MAX },
+    {"Satin1", FLT_MAX },
+    {"Satin2", FLT_MAX },
+    {"Custom1", FLT_MAX },
+    {"Custom2", FLT_MAX },
     0xffffffff,      // EEVAR_CRC32
 };
 // clang-format on
@@ -523,49 +556,127 @@ static void *eeprom_var_ptr(enum eevar_id id, eeprom_vars_t &vars) {
     return addr;
 }
 
-/**
- * @brief conversion function for new version format (features, firmware version/build)
- * does not change crc, it is changed automatically by write function
- *
- * @param eevars eeprom struct in RAM
- * @return true updated (changed)
- * @return false not changed, need reset to defaults
- */
-static bool eeprom_convert_from(eeprom_data &data) {
-    uint16_t version = data.head.VERSION;
-    if (version == 4) {
-        data.v6 = eeprom::v6::convert(data.v4);
-        version = 6;
-    }
+static void eeprom_make_patches(eeprom_vars_t &vars) {
+    // patch active sheet profile's live-z value
+    // copying the ZOFFSET var directly is safe, it has been in the eeprom at least from v2
+    vars.SHEET_PROFILE0.z_offset = vars.ZOFFSET;
+}
 
-    if (version == 6) {
-        data.v7 = eeprom::v7::convert(data.v6);
-        version = 7;
-    }
+// conversion function for old version 2 format (marlin eeprom)
+static int eeprom_convert_from_v2(void) {
+    eeprom_vars_t vars = eeprom_var_defaults;
+    eeprom_init_FW_identifiers(vars);
+    // read FILAMENT_TYPE (uint8_t)
+    st25dv64k_user_read_bytes(ADDR_V2_FILAMENT_TYPE, &(vars.FILAMENT_TYPE), sizeof(uint8_t));
+    // initialize to zero, maybe not necessary
+    if (vars.FILAMENT_TYPE == 0xff)
+        vars.FILAMENT_TYPE = 0;
+    // read FILAMENT_COLOR (uint32_t)
+    st25dv64k_user_read_bytes(ADDR_V2_FILAMENT_COLOR, &(vars.FILAMENT_COLOR), sizeof(uint32_t));
+    // read RUN_SELFTEST & RUN_XYZCALIB & RUN_FIRSTLAY & FSENSOR_ENABLED (4x uint8_t)
+    st25dv64k_user_read_bytes(ADDR_V2_RUN_SELFTEST, &(vars.RUN_SELFTEST), 4 * sizeof(uint8_t));
+    // read ZOFFSET (float)
+    st25dv64k_user_read_bytes(ADDR_V2_ZOFFSET, &(vars.ZOFFSET), sizeof(float));
+    // check ZOFFSET valid range, cancel conversion if not of valid range (defaults will be loaded)
+    if ((vars.ZOFFSET < -2) || (vars.ZOFFSET > 0))
+        return 0;
 
-    if (version == 7) {
-        data.v9 = eeprom::v9::convert(data.v7);
-        version = 9;
-    }
+    eeprom_make_patches(vars);
 
-    if (version == 9) {
-        data.v10 = eeprom::v10::convert(data.v9);
-        version = 10;
-    }
+    eeprom_save_upgraded(vars);
+    return 1;
+}
 
-    if (version == 10) {
-        data.current = eeprom::current::convert(data.v10);
-        version = 11;
-    }
+// conversion function for old version 4 (v 4.0.5)
+static int eeprom_convert_from_v4(void) {
+    eeprom_vars_t vars = eeprom_var_defaults;
+    eeprom_init_FW_identifiers(vars);
 
-    // after body was actualize can actualize head
-    // don't do it before body, would lost version info
-    data.head = eeprom_head_defaults;
-    data.head.FWBUILD = project_build_number;
-    data.head.FWVERSION = eeprom_fwversion_ui16();
+    // start addres of imported data first block (FILAMENT_TYPE..EEVAR_ZOFFSET)
+    eeprom_import_block(EEVAR_FILAMENT_TYPE, EEVAR_PID_NOZ_P, &(vars.FILAMENT_TYPE));
 
-    // if update was successful, version will be current
-    return version == eeprom_fwversion_ui16();
+    // start addres of imported data second block (EEVAR_LAN_FLAG..EEVAR_LAN_IP4_DNS2)
+    eeprom_import_block(EEVAR_LAN_FLAG, EEVAR_LAN_HOSTNAME, &(vars.LAN_FLAG));
+
+    // TODO: keep LAN host name (?)
+
+    eeprom_make_patches(vars);
+
+    eeprom_save_upgraded(vars);
+    return 1;
+}
+
+// conversion function for old version 6 (v 4.1.0)
+static int eeprom_convert_from_v6(void) {
+    eeprom_vars_t vars = eeprom_var_defaults;
+    eeprom_init_FW_identifiers(vars);
+
+    // start addres of imported data block (FILAMENT_TYPE..EEVAR_SOUND_MODE)
+    eeprom_import_block(EEVAR_FILAMENT_TYPE, EEVAR_SOUND_VOLUME, &(vars.FILAMENT_TYPE));
+
+    eeprom_make_patches(vars);
+
+    eeprom_save_upgraded(vars);
+    return 1;
+}
+
+// conversion function for old version 8 (v 4.2.x)
+static int eeprom_convert_from_v7(void) {
+    eeprom_vars_t vars = eeprom_var_defaults;
+    eeprom_init_FW_identifiers(vars);
+
+    // start addres of imported data block (FILAMENT_TYPE..EEVAR_LANGUAGE)
+    eeprom_import_block(EEVAR_FILAMENT_TYPE, EEVAR_FILE_SORT, &(vars.FILAMENT_TYPE));
+
+    eeprom_make_patches(vars);
+
+    eeprom_save_upgraded(vars);
+    return 1;
+}
+
+// conversion function for old version 8 (v 4.3.RC)
+static int eeprom_convert_from_v8(void) {
+    eeprom_vars_t vars = eeprom_var_defaults;
+    eeprom_init_FW_identifiers(vars);
+
+    // start addres of imported data block (FILAMENT_TYPE..EEVAR_SOUND_MODE)
+    eeprom_import_block(EEVAR_FILAMENT_TYPE, EEVAR_MENU_TIMEOUT, &(vars.FILAMENT_TYPE));
+
+    eeprom_make_patches(vars);
+
+    eeprom_save_upgraded(vars);
+    return 1;
+}
+
+// conversion function for old version 9 (v 4.3.2)
+static int eeprom_convert_from_v9(void) {
+    eeprom_vars_t vars = eeprom_var_defaults;
+    eeprom_init_FW_identifiers(vars);
+
+    // start addres of imported data block (FILAMENT_TYPE..EEVAR_DEVHASH_IN_QR)
+    eeprom_import_block(EEVAR_FILAMENT_TYPE, EEVAR_FOOTER_SETTING, &(vars.FILAMENT_TYPE));
+
+    eeprom_make_patches(vars);
+
+    eeprom_save_upgraded(vars);
+    return 1;
+}
+
+// conversion function for new version format (features, firmware version/build)
+static int eeprom_convert_from(uint16_t version, uint16_t features) {
+    if (version == 2)
+        return eeprom_convert_from_v2();
+    if (version == 4)
+        return eeprom_convert_from_v4();
+    if (version == 6)
+        return eeprom_convert_from_v6();
+    if (version == 7)
+        return eeprom_convert_from_v7();
+    if (version == 8)
+        return eeprom_convert_from_v8();
+    if (version == 9)
+        return eeprom_convert_from_v9();
+    return 0;
 }
 
 // version independent crc32 check

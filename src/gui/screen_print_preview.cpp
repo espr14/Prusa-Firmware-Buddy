@@ -97,8 +97,94 @@ static void print_button_pressed() {
         Screens::Access()->Close();
         return;
     }
+    file_opened = true;
 
-    print_begin(gcode.GetGcodeFilepath());
+    // thumbnail presence check
+    {
+        FILE f = { 0 };
+        if (f_gcode_thumb_open(&f, &file) == 0) {
+            char buffer;
+            has_thumbnail = fread((void *)&buffer, 1, 1, &f) > 0;
+            f_gcode_thumb_close(&f);
+        }
+    }
+
+    // find printing time and filament information
+    printing_time[0] = 0;
+    filament_type[0] = 0;
+    filament_used_mm = 0;
+    filament_used_g = 0;
+    valid_printer_settings = true;
+    const unsigned search_last_x_bytes = 20000;
+    FSIZE_t filesize = f_size(&file);
+    f_lseek(&file, filesize > search_last_x_bytes ? filesize - search_last_x_bytes : 0);
+    char name_buffer[64];
+    char value_buffer[32];
+    while (f_gcode_get_next_comment_assignment(
+        &file, name_buffer, sizeof(name_buffer), value_buffer,
+        sizeof(value_buffer))) {
+
+#define name_equals(str) (!strncmp(name_buffer, str, sizeof(name_buffer)))
+
+        if (name_equals("estimated printing time (normal mode)")) {
+            snprintf(printing_time, sizeof(printing_time),
+                "%s", value_buffer);
+        } else if (name_equals("filament_type")) {
+            snprintf(filament_type, sizeof(filament_type),
+                "%s", value_buffer);
+        } else if (name_equals("filament used [mm]")) {
+            sscanf(value_buffer, "%u", &filament_used_mm);
+        } else if (name_equals("filament used [g]")) {
+            sscanf(value_buffer, "%u", &filament_used_g);
+        } else if (name_equals("printer_model")) {
+            if (strncmp(value_buffer, PRINTER_MODEL, sizeof(value_buffer)) == 0) {
+                valid_printer_settings = true; // GCODE settings suits Original Prusa MINI
+            } else {
+                valid_printer_settings = false; // GCODE settings suits another printer
+            }
+        }
+    }
+}
+
+GCodeInfoWithDescription::GCodeInfoWithDescription(window_frame_t *frame)
+    : description_lines {
+        printing_time[0] ? description_line_t(frame, has_thumbnail, 0, _("Print Time"), "%s", printing_time) : description_line_t(frame, has_thumbnail, 0, _("Print Time"), "unknown"),
+        has_thumbnail ? description_line_t(frame, has_thumbnail, 1, _("Material"), "%s/%u g/%0.2f m", filament_type, filament_used_g, (double)((float)filament_used_mm / 1000.0F)) : description_line_t(frame, has_thumbnail, 1, _("Material"), "%s", filament_type),
+        { frame, has_thumbnail, 2, _("Used Filament"), "%.2f m", (double)((float)filament_used_mm / 1000.0F) },
+        { frame, has_thumbnail, 3, string_view_utf8::MakeNULLSTR(), "%.0f g", (double)filament_used_g }
+    } {
+    if (has_thumbnail || !filament_type[0]) {
+        description_lines[2].value.Hide();
+        description_lines[2].title.Hide();
+        description_lines[2].value.Validate(); // == do not redraw
+        description_lines[2].title.Validate(); // == do not redraw
+    }
+    if (has_thumbnail || !(filament_used_mm && filament_used_g)) {
+        description_lines[3].value.Hide();
+        description_lines[3].title.Hide();
+        description_lines[3].value.Validate(); // == do not redraw
+        description_lines[3].title.Validate(); // == do not redraw
+    }
+}
+
+static void print_button_press() {
+    bool approved = true;
+    if (!valid_printer_settings) {
+        switch (MsgBoxTitle(_("WARNING:"), _("This G-CODE was set up for another printer type."),
+            Responses_OkCancel, 0, GuiDefaults::RectScreenBodyNoFoot)) {
+        case Response::Ok:
+            break;
+        case Response::Cancel:
+            Sound_Play(eSOUND_TYPE::SingleBeep);
+            approved = false;
+            break;
+        default:
+            break;
+        }
+    }
+    if (approved) {
+        print_begin(screen_print_preview_data_t::GetGcodeFilepath());
+    }
 }
 
 screen_print_preview_data_t::screen_print_preview_data_t()

@@ -12,10 +12,29 @@
 
 using MenuContainer = WinMenuContainer<MI_RETURN>;
 
-using OdometerScreen = ScreenMenu<EFooter::On, MI_RETURN, MI_ODOMETER_DIST_X, MI_ODOMETER_DIST_Y, MI_ODOMETER_DIST_Z, MI_ODOMETER_DIST_E, MI_ODOMETER_TIME>;
+class ScreenMenuOdometer : public AddSuperWindow<screen_t> {
+    static constexpr const char *label = N_("STATISTICS");
+    static const constexpr char *x_text = N_("X-axis");
+    static const constexpr char *y_text = N_("Y-axis");
+    static const constexpr char *z_text = N_("Z-axis");
+    static const constexpr char *e_text = N_("Filament");
+    static const constexpr char *t_text = N_("Print Time");
+    static const constexpr char *val_format = "%0.1f m"; // do not translate
+    static const constexpr char *time_format = "%u s";   // do not translate
 
-class ScreenOdometer : public OdometerScreen {
-    static constexpr const char *label = N_("ODOMETER");
+    MenuContainer container;
+    window_menu_t menu;
+    window_header_t header;
+    window_text_t x_txt;
+    window_text_t y_txt;
+    window_text_t z_txt;
+    window_text_t e_txt;
+    window_text_t t_txt;
+    window_numb_t x_val;
+    window_numb_t y_val;
+    window_numb_t z_val;
+    window_numb_t e_val;
+    window_numb_t t_val;
 
     static float getVal(Odometer_s::axis_t axis) {
         Odometer_s::instance().force_to_eeprom();
