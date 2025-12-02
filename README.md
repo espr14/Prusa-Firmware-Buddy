@@ -50,6 +50,10 @@ python utils/build.py --preset mini --toolchain cmake/AnyGccArmNoneEabi.cmake --
 If you have python installed and in your PATH but still getting cmake error `Python3 not found.` Try running python and python3 from cmd. If one of it opens Microsoft Store instead of either opening python interpreter or complaining `'python3' is not recognized as an internal or external command,
 operable program or batch file.` Open `manage app execution aliases` and disable `App Installer` association with `python.exe` and `python3.exe`.
 
+#### Language versions on Windows
+
+Non-english versions require `msgfmt` to build. On Windows, download [Gettext](https://sourceforge.net/projects/cppcms/files/boost_locale/gettext_for_windows/) and extract `msgfmt` and add its directory to the system path.
+
 ### Development
 
 The build process of this project is driven by CMake and `build.py` is just a high-level wrapper around it. As most modern IDEs support some kind of CMake integration, it should be possible to use almost any editor for development. Below are some documents describing how to setup some popular text editors.
